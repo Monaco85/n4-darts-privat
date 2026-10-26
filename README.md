@@ -12,6 +12,10 @@ See `docs/architecture.md` for the design and `docs/adr/` for the key decisions.
 | `packages/web`    | React app: `/station/n`, `/admin`, `/display`              |
 | `tools/board-sim` | Fake Autodarts Board Manager for development and tests     |
 
+## Windows (lokal, ohne Internet)
+
+`start-windows.cmd` doppelklicken: installiert bei Bedarf Node.js und die Abhaengigkeiten und startet Server, Oberflaeche und zwei simulierte Boards. Danach oeffnen sich Station 1 (<http://localhost:5173/station/1>) und das Fake-Board (<http://localhost:3180/>). Dasselbe auf jedem System: `node scripts/n4-start.mjs` nach `pnpm install`.
+
 ## Run it locally
 
 Play the whole thing on your laptop with two fake boards instead of real ones.
