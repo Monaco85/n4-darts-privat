@@ -8,6 +8,7 @@ import {
   defaultX01Settings,
   isSegment,
   MAX_PLAYERS,
+  type MatchState,
   MIN_PLAYERS,
   matchState,
   RULES_VERSION,
@@ -97,9 +98,25 @@ export function createStation(options: { id: number; db: Db; board: BoardControl
               settings: match.settings,
               state: current,
               label: match.label,
+              dartCoords: visitCoords(current),
             }
           : null,
     };
+  }
+
+  /** Board positions of the current visit's darts, for the station's dartboard. */
+  function visitCoords(current: MatchState): Record<string, { x: number; y: number }> {
+    const ids = new Set((current.currentVisit?.darts ?? []).map((d) => d.dartId));
+    const corrected = new Set(
+      events.flatMap((e) => (e.type === "DartCorrected" ? [e.dartId] : [])),
+    );
+    const coords: Record<string, { x: number; y: number }> = {};
+    for (const e of events) {
+      if (e.type !== "DartThrown" || !ids.has(e.dartId) || corrected.has(e.dartId)) continue;
+      const at = e.coords as { x: number; y: number } | undefined;
+      if (at && !e.bouncer) coords[e.dartId] = { x: at.x, y: at.y };
+    }
+    return coords;
   }
 
   function notify() {

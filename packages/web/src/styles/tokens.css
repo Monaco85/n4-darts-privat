@@ -4,32 +4,38 @@
  */
 
 :root {
-  /* Grounds, darkest first. */
-  --bg: #060708;
-  --panel: #0b0d0f;
-  --surface: #0f1215;
-  --line-soft: #1a1d20;
-  --border: #2b2f33;
+  /* Grounds, darkest first: deep navy, as on Autodarts. */
+  --bg: #0b0f2b;
+  --panel: #151b47;
+  --surface: #1c2356;
+  --line-soft: #262f66;
+  --border: #36407e;
 
-  --text: #f2ede4;
-  --muted: #8c9096;
-  --faint: #3a3f44;
+  --text: #ffffff;
+  --muted: #a4acd8;
+  --faint: #4f5892;
 
-  --accent: #a68cff;
-  --accent-text: #060708;
-  --accent-tint: #120f1a;
-  --accent-line: #3a3150;
+  --accent: #7c93ff;
+  --accent-text: #0b0f2b;
+  --accent-tint: #1f2a6b;
+  --accent-line: #4a5bc4;
 
-  --ok: #5cffa0;
-  --ok-tint: #0a1611;
-  --ok-line: #1f4a35;
-  --warn: #ffb23d;
-  --warn-tint: #140f06;
-  --warn-line: #5a4318;
-  --danger: #ff4d3d;
-  --danger-tint: #170a09;
-  --danger-line: #5a2420;
-  --danger-faint: #6e4440;
+  --ok: #3ddc84;
+  --ok-tint: #0f2a2a;
+  --ok-line: #1f6b4f;
+  --warn: #ffb547;
+  --warn-tint: #2a2120;
+  --warn-line: #7a5520;
+  --danger: #ff5a5f;
+  --danger-tint: #2c1530;
+  --danger-line: #7a2a40;
+  --danger-faint: #8a5a6e;
+
+  /* Glass panels over the background gradient. */
+  --glass: rgb(255 255 255 / 0.06);
+  --glass-strong: rgb(255 255 255 / 0.12);
+  --glass-line: rgb(255 255 255 / 0.14);
+  --radius: 14px;
 
   /* Initials avatars: muted, so light text reads on all of them. */
   --avatar-1: #4b3a7a;
@@ -42,9 +48,9 @@
   --avatar-8: #3a4048;
   --avatar-9: #2e5a5a;
 
-  /* Silkscreen for labels, names and buttons; Geist Pixel for numbers and running text. */
-  --font-pixel: "Silkscreen", monospace;
-  --font-text: "Geist Pixel", monospace;
+  /* Inter everywhere: labels, names and buttons (--font-pixel) as well as numbers and text. */
+  --font-pixel: "Inter Variable", system-ui, sans-serif;
+  --font-text: "Inter Variable", system-ui, sans-serif;
 
   color-scheme: dark;
 }

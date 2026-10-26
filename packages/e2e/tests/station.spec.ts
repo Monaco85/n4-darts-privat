@@ -12,12 +12,14 @@ test("a quick match on the station, from setup to Done", async ({ page, n4: _ })
   await page.getByRole("button", { name: "Start" }).click();
 
   const visit = page.getByRole("region", { name: "Current visit" });
+  // The big score on each card; the cards' visit history repeats what's left.
+  const scores = page.locator(".scoreboard .remaining");
   await expect(visit.getByText("Ann to throw")).toBeVisible();
 
   // A dart from the board shows up, and the score follows.
   await board1.dart("T20");
   await expect(visit.getByRole("button", { name: "Correct dart 1: T20" })).toBeVisible();
-  await expect(page.getByText("241", { exact: true })).toBeVisible();
+  await expect(scores.getByText("241", { exact: true })).toBeVisible();
 
   // Correct it: T20 was really a D20.
   await visit.getByRole("button", { name: "Correct dart 1: T20" }).click();
@@ -25,7 +27,7 @@ test("a quick match on the station, from setup to Done", async ({ page, n4: _ })
   await picker.getByRole("button", { name: "Double" }).click();
   await picker.getByRole("button", { name: "20", exact: true }).click();
   await expect(visit.getByRole("button", { name: "Correct dart 1: D20" })).toBeVisible();
-  await expect(page.getByText("261", { exact: true })).toBeVisible();
+  await expect(scores.getByText("261", { exact: true })).toBeVisible();
 
   // A dart the board missed, added by hand.
   await visit.getByRole("button", { name: "Add dart 2" }).click();
@@ -37,7 +39,7 @@ test("a quick match on the station, from setup to Done", async ({ page, n4: _ })
   // Undo drops the visit in progress.
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(visit.getByRole("button", { name: /Correct dart 1/ })).toHaveCount(0);
-  await expect(page.getByText("301", { exact: true })).toHaveCount(2);
+  await expect(scores.getByText("301", { exact: true })).toHaveCount(2);
 
   // Three darts end the visit; the takeout passes the turn.
   await board1.takeout();
@@ -45,7 +47,7 @@ test("a quick match on the station, from setup to Done", async ({ page, n4: _ })
   await expect(visit.getByText("Remove darts")).toBeVisible();
   await board1.takeout();
   await expect(visit.getByText("Bob to throw")).toBeVisible();
-  await expect(page.getByText("121", { exact: true })).toBeVisible();
+  await expect(scores.getByText("121", { exact: true })).toBeVisible();
 
   for (const dart of ["M17", "M17", "M17"]) await board1.dart(dart);
   await expect(visit.getByText("Remove darts")).toBeVisible();

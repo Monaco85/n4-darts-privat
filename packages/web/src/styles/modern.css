@@ -1,0 +1,918 @@
+/*
+ * The modern theme (Branch "lokal"): Inter, a deep navy gradient, glass panels and rounded
+ * corners, and the station's match screen laid out like Autodarts, with the board in the middle.
+ * Loaded last, so it refines the pieces above without rewriting them.
+ */
+
+/* ---------- Everywhere ---------- */
+
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(1100px 700px at 15% -10%, #3b3399 0%, transparent 60%),
+    radial-gradient(900px 700px at 105% 105%, #4b2185 0%, transparent 55%),
+    linear-gradient(160deg, #121845 0%, #0b0f2b 100%);
+  background-attachment: fixed;
+  font-feature-settings: "tnum", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2 {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+h3,
+.label {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+button,
+.button {
+  border-color: var(--glass-line);
+  border-radius: 10px;
+  background: var(--glass);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.05s;
+}
+
+button:not(:disabled):hover {
+  background: var(--glass-strong);
+}
+
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+button.primary,
+.button.primary {
+  border: 0;
+  background: linear-gradient(135deg, #6f86ff 0%, #8b66ff 100%);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 6px 24px rgb(111 134 255 / 0.35);
+}
+
+button.primary:not(:disabled):hover {
+  background: linear-gradient(135deg, #8195ff 0%, #9b7bff 100%);
+}
+
+button.cta,
+.button.cta {
+  border-radius: 12px;
+  clip-path: none;
+}
+
+@media (min-width: 760px) {
+  button.cta,
+  .button.cta {
+    letter-spacing: 0.04em;
+    clip-path: none;
+  }
+}
+
+button.primary:disabled {
+  background: var(--glass);
+  box-shadow: none;
+}
+
+button.danger {
+  background: transparent;
+}
+
+input,
+select {
+  border-color: var(--glass-line);
+  border-radius: 10px;
+  background-color: rgb(255 255 255 / 0.05);
+  font-size: 20px;
+}
+
+.status {
+  border-radius: 999px;
+  border-color: var(--glass-line);
+  background: var(--glass);
+  font-weight: 600;
+}
+
+/* ---------- Station frame ---------- */
+
+.station-bar {
+  /* Above the match below, so the board menu opens over the dart tiles. */
+  position: relative;
+  z-index: 20;
+  border-bottom: 1px solid var(--glass-line);
+  background: rgb(8 11 35 / 0.55);
+  backdrop-filter: blur(10px);
+}
+
+.station-name {
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.settings-strip {
+  justify-content: flex-start;
+  gap: 8px;
+  border-bottom: 0;
+}
+
+.settings-strip > span {
+  padding: 4px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 8px;
+  background: var(--glass);
+  color: var(--text);
+}
+
+.settings-strip .settings-strip-label {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+/* ---------- Scoreboard: a glass card per player ---------- */
+
+.scoreboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scoreboard .player,
+.scoreboard.many .player,
+.scoreboard.many .player.active {
+  --avatar: 30px;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: none;
+  grid-template-rows: none;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius);
+  background: var(--glass);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.scoreboard .player.active,
+.scoreboard.many .player.active {
+  border: 2px solid #a9b8ff;
+  background: rgb(124 147 255 / 0.16);
+  box-shadow:
+    0 0 0 4px rgb(124 147 255 / 0.14),
+    0 12px 40px rgb(0 0 0 / 0.35);
+}
+
+.scoreboard .throwing {
+  display: none;
+}
+
+.player-main > * {
+  align-self: center;
+}
+
+.player-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.scoreboard .remaining,
+.scoreboard.many .remaining,
+.scoreboard.many .player.active .remaining {
+  margin: 0;
+  color: rgb(255 255 255 / 0.72);
+  font-family: var(--font-text);
+  font-weight: 800;
+  font-size: clamp(52px, 16vw, 76px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.scoreboard .player.active .remaining {
+  color: #fff;
+}
+
+.player-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.player-id .avatar {
+  flex: none;
+}
+
+.legs-badge {
+  flex: none;
+  min-width: 26px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--ok);
+  color: #062a19;
+  font-weight: 800;
+  font-size: 15px;
+  text-align: center;
+}
+
+.scoreboard .player-name,
+.scoreboard.many .player-name,
+.scoreboard.many .player.active .player-name {
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font-text);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.scoreboard .player-meta {
+  min-height: 1.2em;
+  color: var(--muted);
+  font-family: var(--font-text);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.scoreboard .checkout {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  font-family: var(--font-text);
+  font-size: 18px;
+}
+
+.scoreboard .checkout > span {
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: var(--glass-strong);
+  color: var(--muted);
+  font-weight: 700;
+  font-style: italic;
+}
+
+.scoreboard .checkout > .checkout-next {
+  background: #fff;
+  color: var(--bg);
+}
+
+/* This leg's visits beside the score: scored, then left. */
+.player-history {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 118px;
+  max-height: 200px;
+  margin: 0;
+  padding: 2px 0 2px 14px;
+  overflow: hidden;
+  border-left: 1px solid var(--glass-line);
+  list-style: none;
+  font-family: var(--font-text);
+  font-size: 16px;
+}
+
+.player-history li {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 2px 0;
+  color: var(--muted);
+  text-align: right;
+}
+
+.player-history li > span:first-child {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.player-history li.bust > span:first-child {
+  color: var(--danger);
+}
+
+.player-history li:last-child > span:last-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+@media (min-width: 760px) {
+  .scoreboard {
+    gap: 16px;
+  }
+
+  .scoreboard .player {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 18px 22px;
+  }
+
+  .scoreboard .remaining {
+    font-size: clamp(80px, min(9vw, 15vh), 150px);
+  }
+
+  .scoreboard .player-name {
+    font-size: 20px;
+  }
+
+  .scoreboard .player-meta {
+    font-size: 15px;
+  }
+
+  .scoreboard .player {
+    --avatar: 34px;
+  }
+
+  /* Three to eight players: smaller cards, no history column. */
+  .scoreboard.many {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .scoreboard.many .player,
+  .scoreboard.many .player.active {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .scoreboard.many .player-history {
+    display: none;
+  }
+
+  .scoreboard.many .remaining,
+  .scoreboard.many .player.active .remaining {
+    font-size: clamp(56px, min(6vw, 11vh), 100px);
+  }
+}
+
+/* ---------- The visit: total, then three dart tiles ---------- */
+
+.visit,
+.visit.bust {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  grid-template-areas:
+    "head darts"
+    "status status";
+  gap: 8px 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.visit-head {
+  grid-area: head;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 72px;
+  padding: 6px;
+  border: 1px solid var(--glass-line);
+  border-radius: 12px;
+  background: var(--glass);
+  text-align: center;
+}
+
+.visit-head .wide-only {
+  display: none;
+}
+
+.visit-head > span:first-child {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visit-total {
+  display: block;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.visit.bust .visit-head {
+  border-color: var(--danger);
+  background: rgb(255 90 95 / 0.18);
+}
+
+.visit-bust {
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+}
+
+.visit .darts {
+  grid-area: darts;
+  gap: 10px;
+}
+
+.visit .dart,
+.visit.bust .dart {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+  min-height: 72px;
+  padding: 6px;
+  border: 1px solid var(--accent-line);
+  border-radius: 12px;
+  background: rgb(124 147 255 / 0.22);
+  text-align: center;
+}
+
+.visit .dart-index {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.visit .dart-label {
+  font-weight: 800;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.visit .dart.empty,
+.visit .dart.add {
+  border: 1px solid var(--glass-line);
+  border-style: solid;
+  background: var(--glass);
+}
+
+.visit .dart.add:hover {
+  border-color: var(--accent-line);
+  background: var(--glass-strong);
+}
+
+/* The rest of the checkout route, suggested in the empty slots. */
+.visit .dart.suggested .dart-label {
+  color: var(--muted);
+  font-weight: 600;
+  font-style: italic;
+}
+
+.visit .dart-add {
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  font-size: 10px;
+}
+
+.visit .dart.busted {
+  border-color: var(--danger);
+  background: rgb(255 90 95 / 0.2);
+  color: #ffd2d4;
+}
+
+.visit .dart.ignored,
+.visit.bust .dart.ignored {
+  border: 1px dashed var(--faint);
+  background: transparent;
+}
+
+.visit-status {
+  grid-area: status;
+  min-height: 30px;
+  font-family: var(--font-text);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.visit-status.waiting {
+  min-height: 22px;
+  font-size: 13px;
+}
+
+.visit > p.label {
+  display: none;
+}
+
+@media (min-width: 760px) {
+  .visit,
+  .visit.bust {
+    gap: 8px 14px;
+  }
+
+  .visit-head,
+  .visit .dart {
+    min-height: 92px;
+  }
+
+  .visit-total {
+    font-size: 52px;
+  }
+
+  .visit .dart-label {
+    font-size: 48px;
+  }
+
+  .visit .darts {
+    gap: 14px;
+  }
+
+  .visit .dart-index,
+  .visit .dart-add {
+    font-size: 12px;
+  }
+
+  .visit-status {
+    font-size: 16px;
+  }
+}
+
+/* ---------- The board in the middle, buttons beside it ---------- */
+
+.match {
+  gap: 14px;
+}
+
+.match-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: auto;
+}
+
+.stage-board {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.dartboard {
+  width: min(100%, 420px);
+  height: auto;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 0 18px rgb(61 220 132 / 0.55)) drop-shadow(0 0 60px rgb(61 220 132 / 0.22));
+}
+
+@media (min-width: 760px) {
+  /* The match fills the screen; the board takes whatever height is left. */
+  .station:has(.match-stage) {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .station:has(.match-stage) .station-body {
+    min-height: 0;
+    padding-bottom: 20px;
+  }
+
+  .match,
+  .station .match {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 16px;
+  }
+
+  .match-stage {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 24px;
+    min-height: 220px;
+    margin: 0;
+  }
+
+  .stage-board {
+    grid-column: 2;
+    height: 100%;
+    min-height: 0;
+    padding: 6px 0;
+  }
+
+  .dartboard {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+  }
+
+  .match-stage .match-actions {
+    grid-column: 3;
+    align-self: end;
+    justify-self: end;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(100%, 340px);
+    margin: 0;
+  }
+
+  .match-stage .next-player {
+    min-height: 110px;
+    clip-path: none;
+  }
+}
+
+/* The board itself */
+.db-frame {
+  fill: #141519;
+  stroke: rgb(255 255 255 / 0.1);
+  stroke-width: 2;
+}
+
+.db-bed-dark,
+.db-bed-light,
+.db-ring-red,
+.db-ring-green {
+  stroke: #b9bcc4;
+  stroke-width: 0.6;
+}
+
+.db-bed-dark {
+  fill: #1c1d21;
+}
+
+.db-bed-light {
+  fill: #eee2c6;
+}
+
+.db-ring-red {
+  fill: #d42f3a;
+}
+
+.db-ring-green {
+  fill: #1e9b55;
+}
+
+.db-wire {
+  fill: none;
+  stroke: #9da0a8;
+  stroke-width: 1.2;
+}
+
+.db-number {
+  fill: #fff;
+  font-family: var(--font-text);
+  font-weight: 700;
+  font-size: 24px;
+  text-anchor: middle;
+}
+
+.db-dart-halo {
+  fill: rgb(124 147 255 / 0.35);
+}
+
+.db-dart-dot {
+  fill: #fff;
+  stroke: #0b0f2b;
+  stroke-width: 2.5;
+}
+
+.db-dart-index {
+  fill: #0b0f2b;
+  font-family: var(--font-text);
+  font-weight: 800;
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+.db-dart.latest .db-dart-dot {
+  fill: #ffd84a;
+}
+
+.db-dart.latest .db-dart-halo {
+  fill: rgb(255 216 74 / 0.4);
+}
+
+.db-dart.ignored {
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .db-dart {
+    animation: db-land 0.25s ease-out;
+  }
+
+  .db-dart.latest .db-dart-halo {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: db-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes db-land {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes db-pulse {
+  50% {
+    transform: scale(1.35);
+    opacity: 0.4;
+  }
+}
+
+/* ---------- Rounded glass for the panels on every page ---------- */
+
+.panel,
+.quick-match-settings,
+.lineup .lineup-list li,
+.board-menu-items,
+.picker,
+.error,
+.notice,
+.home-tile,
+.stat-card,
+.stats-table-box,
+.average-chart,
+.heatmap,
+.display-card,
+.display-table,
+.display-champion,
+.display-dart,
+.watch-dart,
+.watch-visit,
+.display .bracket-match,
+.display .awards li,
+.station-card,
+.table-panel,
+.card-row,
+.queue-row,
+.group-preview,
+.seed-list li,
+.admin .bracket-match,
+.admin .awards li,
+.admin-login,
+.diag-stats > div,
+.leg > summary,
+.photo-editor {
+  border-color: var(--glass-line);
+  border-radius: var(--radius);
+}
+
+.player-picker button,
+.segmented button,
+.picker-grid button {
+  border-radius: 10px;
+}
+
+.game-shot {
+  letter-spacing: 0.01em;
+}
+
+.match-over-winner {
+  letter-spacing: 0.04em;
+}
+
+/* The checkout route already fills the empty dart tiles; the cards stay compact without it. */
+.scoreboard .checkout {
+  display: none;
+}
+
+@media (max-width: 759px) {
+  .player-history {
+    display: none;
+  }
+}
+
+/* Laptops and other short screens: tighter cards and tiles, so the board keeps its size. */
+@media (min-width: 760px) and (max-height: 900px) {
+  .station-bar {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .settings-strip {
+    padding-top: 6px;
+    padding-bottom: 0;
+  }
+
+  .station:has(.match-stage) .station-body {
+    gap: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .match,
+  .station .match {
+    gap: 12px;
+  }
+
+  .scoreboard .player {
+    padding: 12px 18px;
+  }
+
+  .scoreboard .remaining {
+    font-size: clamp(64px, 12vh, 120px);
+  }
+
+  .player-history {
+    max-height: 150px;
+    font-size: 14px;
+  }
+
+  .visit-head,
+  .visit .dart {
+    min-height: 72px;
+  }
+
+  .visit-total {
+    font-size: 40px;
+  }
+
+  .visit .dart-label {
+    font-size: 38px;
+  }
+
+  .match-stage .next-player {
+    min-height: 88px;
+  }
+}
+
+/* ---------- /watch: the same cards, sized for the TV ---------- */
+
+.watch .scoreboard .player,
+.watch .scoreboard .player.active {
+  --avatar: calc(44 * var(--px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: none;
+  grid-template-rows: none;
+  padding: calc(22 * var(--px)) calc(28 * var(--px));
+}
+
+.watch .scoreboard .remaining,
+.watch .scoreboard .player.active .remaining {
+  grid-area: auto;
+  align-self: center;
+  font-size: calc(150 * var(--px));
+}
+
+.watch .scoreboard .player-name,
+.watch .scoreboard .player.active .player-name {
+  grid-area: auto;
+  align-self: center;
+  color: var(--text);
+  font-size: calc(26 * var(--px));
+}
+
+.watch .scoreboard .player-meta {
+  grid-area: auto;
+  align-self: center;
+  font-size: calc(20 * var(--px));
+}
+
+.watch .legs-badge {
+  min-width: calc(34 * var(--px));
+  font-size: calc(22 * var(--px));
+}
+
+.watch .player-history {
+  justify-content: center;
+  min-width: calc(180 * var(--px));
+  max-height: none;
+  font-size: calc(24 * var(--px));
+}
+
+.watch .scoreboard.many .player,
+.watch .scoreboard.many .player.active {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.watch .scoreboard.many .player-history {
+  display: none;
+}
+
+.watch .scoreboard.many .remaining {
+  font-size: calc(110 * var(--px));
+}
+
+.watch-dart,
+.watch-visit-total {
+  font-weight: 800;
+}

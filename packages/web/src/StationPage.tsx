@@ -11,6 +11,7 @@ import type { MatchView, StationCommand } from "@n4/server/api";
 import { Fragment, type ReactNode, useState } from "react";
 import { Avatar } from "./Avatar.tsx";
 import { BoardMenu, type MatchAction } from "./BoardMenu.tsx";
+import { Dartboard } from "./Dartboard.tsx";
 import { dartLabel } from "./darts.ts";
 import { Logo } from "./Logo.tsx";
 import {
@@ -270,22 +271,28 @@ function Match({ match, send }: { match: MatchView; send: Send }) {
   const thrower = match.players[visit?.player ?? match.state.currentPlayer];
   return (
     <section className="match">
-      <Scoreboard match={match} onDart={setCorrecting} onAdd={() => setAdding(true)} hints />
+      <PlayerCards match={match} hints />
+      <VisitPanel match={match} onDart={setCorrecting} onAdd={() => setAdding(true)} hints />
 
-      <div className="match-actions">
-        <button
-          type="button"
-          className="primary cta next-player"
-          onClick={() => send({ type: "nextPlayer" })}
-        >
-          <span>
-            Next player <PixelIcon name="arrow" height="0.9em" />
-          </span>
-          <span className="next-player-up">Up: {match.players[upNext(match)]?.name}</span>
-        </button>
-        <button type="button" onClick={() => send({ type: "undo" })}>
-          Undo
-        </button>
+      <div className="match-stage">
+        <div className="stage-board">
+          <Dartboard darts={visit?.darts ?? []} coords={match.dartCoords ?? {}} />
+        </div>
+        <div className="match-actions">
+          <button
+            type="button"
+            className="primary cta next-player"
+            onClick={() => send({ type: "nextPlayer" })}
+          >
+            <span>
+              Next player <PixelIcon name="arrow" height="0.9em" />
+            </span>
+            <span className="next-player-up">Up: {match.players[upNext(match)]?.name}</span>
+          </button>
+          <button type="button" onClick={() => send({ type: "undo" })}>
+            Undo
+          </button>
+        </div>
       </div>
 
       {correcting && (
@@ -385,60 +392,95 @@ function checkoutHint(match: MatchView): Segment[] | null {
   return checkoutRoute(thrower.remaining, 3 - thrown, settings.outRule);
 }
 
+/** Points, darts and three-dart average over the whole match, per player. */
+function averages(match: MatchView): (number | null)[] {
+  const { state } = match;
+  const points = state.players.map(() => 0);
+  const darts = state.players.map(() => 0);
+  const add = (visit: NonNullable<MatchView["state"]["currentVisit"]>) => {
+    const counted = visit.darts.filter((d) => !d.ignored);
+    darts[visit.player] = (darts[visit.player] ?? 0) + counted.length;
+    if (!visit.bust) {
+      points[visit.player] = (points[visit.player] ?? 0) + counted.reduce((n, d) => n + d.score, 0);
+    }
+  };
+  for (const leg of state.legs) for (const visit of leg.visits) add(visit);
+  if (state.currentVisit) add(state.currentVisit);
+  return points.map((p, i) => (darts[i] ? (p / (darts[i] as number)) * 3 : null));
+}
+
+/** This leg's visits for a player, newest first: what was scored and what was left. */
+function legHistory(match: MatchView, player: PlayerIndex) {
+  const leg = match.state.legs.at(-1);
+  let left = match.settings.startScore;
+  const rows: { scored: string; left: number }[] = [];
+  for (const visit of leg?.visits ?? []) {
+    if (visit.player !== player) continue;
+    const scored = visit.darts.filter((d) => !d.ignored).reduce((n, d) => n + d.score, 0);
+    if (!visit.bust) left -= scored;
+    rows.push({ scored: visit.bust ? "Bust" : String(scored), left });
+  }
+  return rows.reverse();
+}
+
 /**
- * A card per player: avatar, name, what's left, legs and last visit; the thrower's framed.
- * With `hints`, the thrower's card shows the checkout route on wide screens.
+ * A card per player: the score big, name and legs below, the average, and this leg's visits
+ * beside it; the thrower's card lit. With `hints`, the thrower's card shows the checkout route.
  */
 export function PlayerCards({ match, hints = false }: { match: MatchView; hints?: boolean }) {
   const { state, players, settings } = match;
-  const leg = state.legs.at(-1);
-  const nameOf = (player: PlayerIndex) => players[player]?.name ?? "?";
   const route = hints ? checkoutHint(match) : null;
-
-  const lastVisitOf = (player: PlayerIndex) => {
-    const last = leg?.visits.findLast((v) => v.player === player);
-    if (!last) return null;
-    return last.bust ? "Bust" : String(last.darts.reduce((sum, d) => sum + d.score, 0));
-  };
+  const avg = averages(match);
 
   return (
     <div className={`scoreboard ${players.length > 2 ? "many" : ""}`}>
       {state.players.map((player, p) => {
         const active = state.currentPlayer === p;
-        const last = lastVisitOf(p);
+        const history = legHistory(match, p);
+        const average = avg[p] ?? null;
         return (
           <div key={players[p]?.id ?? p} className={`player ${active ? "active" : ""}`}>
-            {active && (
-              <span className="throwing">
-                <PixelIcon name="caret" /> Throwing
-              </span>
-            )}
-            {players[p] && <Avatar player={players[p]} large />}
-            <div className="player-name">{nameOf(p)}</div>
-            <div className="remaining">{player.remaining}</div>
-            {/* On every card, so the scores stay level whoever has a route. */}
-            {hints && (
-              <div className="checkout wide-only">
-                {(active ? (route ?? []) : []).map((segment, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: a route can repeat a field (T20 T20 Bull).
-                  <Fragment key={i}>
-                    {i > 0 && <span className="checkout-dot">·</span>}
-                    <span className={i === 0 ? "checkout-next" : undefined}>
+            <div className="player-main">
+              <div className="remaining">{player.remaining}</div>
+              <div className="player-id">
+                {settings.legsToWin > 1 && <span className="legs-badge">{player.legsWon}</span>}
+                {players[p] && <Avatar player={players[p]} />}
+                <span className="player-name">{players[p]?.name ?? "?"}</span>
+              </div>
+              <div className="player-meta">
+                {!player.isIn ? (
+                  <span className="not-in">Not in</span>
+                ) : (
+                  <>
+                    Ø {average === null ? "–" : average.toFixed(1)}
+                    {history[0] && <> · Last {history[0].scored}</>}
+                  </>
+                )}
+              </div>
+              {hints && (
+                <div className="checkout wide-only">
+                  {(active ? (route ?? []) : []).map((segment, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: a route can repeat a field (T20 T20 Bull).
+                    <span key={i} className={i === 0 ? "checkout-next" : undefined}>
                       {dartLabel(segment)}
                     </span>
-                  </Fragment>
-                ))}
-              </div>
-            )}
-            <div className="player-meta">
-              {!player.isIn ? (
-                <span className="not-in">Not in</span>
-              ) : (
-                [settings.legsToWin > 1 && `Legs ${player.legsWon}`, last && `Last ${last}`]
-                  .filter(Boolean)
-                  .join(" · ")
+                  ))}
+                </div>
               )}
             </div>
+            <ol className="player-history wide-only" aria-label="This leg">
+              <li className="history-start">
+                <span />
+                <span>{settings.startScore}</span>
+              </li>
+              {[...history].reverse().map((row, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: visits have no id; order is fixed.
+                <li key={i} className={row.scored === "Bust" ? "bust" : undefined}>
+                  <span>{row.scored}</span>
+                  <span>{row.left}</span>
+                </li>
+              ))}
+            </ol>
           </div>
         );
       })}
@@ -455,6 +497,9 @@ function VisitPanel(props: ScoreboardProps) {
   const nameOf = (player: PlayerIndex) => players[player]?.name ?? "?";
   // The dart that broke the visit, shown in red.
   const bustDart = visit?.bust ? visit.darts.findLast((d) => !d.ignored) : undefined;
+  // The rest of the checkout route fills the empty slots, as a suggestion.
+  const route = props.hints ? (checkoutHint(match) ?? []) : [];
+  const thrown = visit?.darts.length ?? 0;
 
   return (
     <section className={`visit ${visit?.bust ? "bust" : ""}`} aria-label="Current visit">
@@ -474,21 +519,31 @@ function VisitPanel(props: ScoreboardProps) {
       <div className="darts">
         {[0, 1, 2].map((i) => {
           const dart = visit?.darts[i];
-          if (!dart && onAdd && state.phase === "throwing" && i === (visit?.darts.length ?? 0)) {
+          if (!dart && onAdd && state.phase === "throwing" && i === thrown) {
+            const suggestion = route[0];
             return (
               <button
                 type="button"
                 key={`add-${i}`}
-                className="dart add"
+                className={`dart add ${suggestion ? "suggested" : ""}`}
                 onClick={onAdd}
                 aria-label={`Add dart ${i + 1}`}
               >
                 <span className="dart-index label">D{i + 1}</span>
+                {suggestion && <span className="dart-label">{dartLabel(suggestion)}</span>}
                 <span className="dart-add label">+ Add</span>
               </button>
             );
           }
-          if (!dart) return <span key={`empty-${i}`} className="dart empty" />;
+          if (!dart) {
+            const suggestion = route[i - thrown];
+            return (
+              <span key={`empty-${i}`} className={`dart empty ${suggestion ? "suggested" : ""}`}>
+                <span className="dart-index label">D{i + 1}</span>
+                {suggestion && <span className="dart-label">{dartLabel(suggestion)}</span>}
+              </span>
+            );
+          }
           const className = `dart ${dart.ignored ? "ignored" : ""} ${dart === bustDart ? "busted" : ""}`;
           const content = (
             <>

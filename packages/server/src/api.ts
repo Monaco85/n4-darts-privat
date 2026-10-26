@@ -21,6 +21,11 @@ export interface MatchView {
   state: MatchState;
   /** For tournament matches, e.g. "Group A · match 4". */
   label: string | null;
+  /**
+   * Where the board saw each dart of the current visit (normalised board coordinates, bull at
+   * 0,0, y toward 20), by dart id. Corrected, added and bounced darts have none.
+   */
+  dartCoords?: Record<string, { x: number; y: number }>;
 }
 
 /** A match as listed in /admin history. */
