@@ -47,11 +47,30 @@ try {
   $lock = (Get-FileHash 'pnpm-lock.yaml').Hash
   $mark = 'node_modules\.n4-lock'
   $installed = if (Test-Path $mark) { (Get-Content $mark -Raw).Trim() } else { '' }
-  if (-not (Test-Path 'packages\web\node_modules\vite\bin\vite.js') -or $installed -ne $lock) {
-    Step 'Installiere Abhaengigkeiten (dauert 1-2 Minuten)'
+  $font = 'packages\web\node_modules\@fontsource-variable\inter\package.json'
+  $fontMissing = -not (Test-Path $font)
+  if (-not (Test-Path 'packages\web\node_modules\vite\bin\vite.js') -or $installed -ne $lock -or $fontMissing) {
+    Write-Host ''
+    Write-Host '  +------------------------------------------------------------+' -ForegroundColor Yellow
+    if ($fontMissing) {
+      Write-Host '  |  Neue Schrift (Inter) und Pakete werden installiert ...    |' -ForegroundColor Yellow
+    } else {
+      Write-Host '  |  Neue Pakete werden installiert ...                        |' -ForegroundColor Yellow
+    }
+    Write-Host '  |  Das dauert 1-2 Minuten. Bitte das Fenster offen lassen.   |' -ForegroundColor Yellow
+    Write-Host '  +------------------------------------------------------------+' -ForegroundColor Yellow
+    Write-Host ''
+    $watch = [Diagnostics.Stopwatch]::StartNew()
     & npx.cmd -y pnpm@12.14.0 install
     if ($LASTEXITCODE -ne 0) { throw 'pnpm install ist fehlgeschlagen (Meldungen oben).' }
     Set-Content -LiteralPath $mark -Value $lock -Encoding ASCII
+    if (Test-Path $font) {
+      Write-Host "  [OK] Schrift Inter installiert ($([int]$watch.Elapsed.TotalSeconds) s)" -ForegroundColor Green
+    } else {
+      Write-Host '  [!] Schrift Inter fehlt noch - die Oberflaeche nutzt solange eine Ersatzschrift.' -ForegroundColor Yellow
+    }
+  } else {
+    Write-Host '  [OK] Schrift und Pakete sind aktuell' -ForegroundColor Green
   }
 
   if ($board) {
