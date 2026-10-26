@@ -36,8 +36,13 @@ try {
     Set-Content -LiteralPath $mark -Value $lock -Encoding ASCII
   }
 
-  Step 'Starte Server, Oberflaeche und zwei simulierte Boards'
-  & node scripts\n4-start.mjs
+  if ($env:N4_BOARD) {
+    Step "Starte Server und Oberflaeche fuer das echte Board unter $env:N4_BOARD"
+    & node scripts\n4-start.mjs --board $env:N4_BOARD
+  } else {
+    Step 'Starte Server, Oberflaeche und zwei simulierte Boards'
+    & node scripts\n4-start.mjs
+  }
 } catch {
   Write-Host ''
   Write-Host "FEHLER: $($_.Exception.Message)" -ForegroundColor Red

@@ -14,7 +14,9 @@ See `docs/architecture.md` for the design and `docs/adr/` for the key decisions.
 
 ## Windows (lokal, ohne Internet)
 
-`start-windows.cmd` doppelklicken: installiert bei Bedarf Node.js und die Abhaengigkeiten und startet Server, Oberflaeche und zwei simulierte Boards. Danach oeffnen sich Station 1 (<http://localhost:5173/station/1>) und das Fake-Board (<http://localhost:3180/>). Dasselbe auf jedem System: `node scripts/n4-start.mjs` nach `pnpm install`.
+- **Simulator:** `start-windows.cmd` doppelklicken. Installiert bei Bedarf Node.js und die Abhaengigkeiten und startet Server, Oberflaeche und zwei simulierte Boards. Danach oeffnen sich Station 1 (<http://localhost:5173/station/1>) und das Fake-Board (<http://localhost:3180/>).
+- **Echtes Board:** Autodarts starten (der Board Manager muss auf Port 3180 antworten, z. B. <http://localhost:3180/api/version>), dann `start-echtes-board.cmd` doppelklicken und die Adresse des Autodarts-PCs eingeben (Enter = dieser PC). Station 1 wird auf dieses Board gestellt; der Simulator laeuft dabei nicht, sonst wuerde er Port 3180 belegen.
+- Ohne Windows: `node scripts/n4-start.mjs` (Simulator) bzw. `node scripts/n4-start.mjs --board http://<ip>:3180` nach `pnpm install`.
 
 ## Run it locally
 
