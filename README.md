@@ -14,7 +14,7 @@ See `docs/architecture.md` for the design and `docs/adr/` for the key decisions.
 
 ## Windows (lokal, ohne Internet)
 
-**Fertiges Paket:** `pakete/n4-darts-windows.zip` entpacken und `Darts starten.cmd` (echtes Board) oder `Darts Simulator.cmd` doppelklicken. Braucht nur Node.js 22+, kein `pnpm install`. Gespielt wird unter <http://localhost:3000/station/1>. Spieler, Spiele und Stats liegen im Ordner `data` daneben (lesbar: `data/spieler-stats.json`). Neu bauen: `node scripts/package.mjs`.
+**Fertiges Paket:** baut GitHub bei jedem Push auf `lokal` (Actions → „Windows-Paket“); herunterladen unter Releases → „Neuester Stand“ → `n4-darts-windows.zip`. Entpacken und `Darts starten.cmd` (echtes Board) oder `Darts Simulator.cmd` doppelklicken. Braucht nur Node.js 22+, kein `pnpm install`. Gespielt wird unter <http://localhost:3000/station/1>. Spieler, Spiele und Stats liegen im Ordner `data` daneben (lesbar: `data/spieler-stats.json`). Neu bauen: `node scripts/package.mjs`.
 
 **Aus dem Quellcode** (zum Weiterentwickeln):
 
