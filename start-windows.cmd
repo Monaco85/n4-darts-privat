@@ -25,10 +25,15 @@ try {
   }
   Write-Host "Node.js $(node -v) ok"
 
-  if (-not (Test-Path 'packages\web\node_modules\vite\bin\vite.js')) {
+  # Neu installieren, wenn noch nichts da ist oder sich pnpm-lock.yaml geaendert hat (z. B. nach git pull).
+  $lock = (Get-FileHash 'pnpm-lock.yaml').Hash
+  $mark = 'node_modules\.n4-lock'
+  $installed = if (Test-Path $mark) { (Get-Content $mark -Raw).Trim() } else { '' }
+  if (-not (Test-Path 'packages\web\node_modules\vite\bin\vite.js') -or $installed -ne $lock) {
     Step 'Installiere Abhaengigkeiten (dauert beim ersten Mal 1-2 Minuten)'
     & npx.cmd -y pnpm@12.14.0 install
     if ($LASTEXITCODE -ne 0) { throw 'pnpm install ist fehlgeschlagen (Meldungen oben).' }
+    Set-Content -LiteralPath $mark -Value $lock -Encoding ASCII
   }
 
   Step 'Starte Server, Oberflaeche und zwei simulierte Boards'
