@@ -1,0 +1,54 @@
+name: Windows-Paket
+
+# Baut bei jedem Push auf "lokal" das fertige Paket (n4-darts-windows.zip) und haengt es an das
+# Release "neuester-stand". Download: Releases -> "Neuester Stand" -> n4-darts-windows.zip.
+on:
+  push:
+    branches: [lokal]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paket
+  cancel-in-progress: true
+
+jobs:
+  paket:
+    name: Paket bauen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Abhaengigkeiten
+        run: pnpm install --frozen-lockfile
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Paket bauen
+        run: node scripts/package.mjs
+
+      - name: Release "Neuester Stand" aktualisieren
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="Stand $(git rev-parse --short HEAD) vom $(date -u +'%d.%m.%Y %H:%M') UTC.
+          n4-darts-windows.zip herunterladen, entpacken, 'Darts starten.cmd' doppelklicken.
+          Beim Aktualisieren den Ordner 'data' behalten (Spieler und Stats)."
+          git tag -f neuester-stand
+          git push -f origin neuester-stand
+          if gh release view neuester-stand > /dev/null 2>&1; then
+            gh release edit neuester-stand --title "Neuester Stand" --notes "$notes" --prerelease=false --latest
+          else
+            gh release create neuester-stand --title "Neuester Stand" --notes "$notes" --latest
+          fi
+          gh release upload neuester-stand release/n4-darts-windows.zip --clobber
