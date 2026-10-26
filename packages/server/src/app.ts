@@ -5,6 +5,7 @@ import { registerAdmin } from "./admin.ts";
 import type { Db } from "./db.ts";
 import { diagnostics } from "./diagnostics.ts";
 import { displayView } from "./display.ts";
+import { createGameSummary, registerGameSummary, writeStatsFile } from "./gameSummary.ts";
 import { createChangeFeed, streamView } from "./live.ts";
 import { registerMatches } from "./matches.ts";
 import { registerPlayers } from "./players.ts";
@@ -30,6 +31,8 @@ export interface AppOptions {
   scheduler?: SchedulerOptions;
   /** Shared PIN for /admin; without one /admin is open. */
   adminPin?: string | undefined;
+  /** Where `spieler-stats.json` is kept up to date (main passes the data folder). */
+  statsDir?: string;
 }
 
 export function buildApp(options: AppOptions = {}) {
@@ -44,6 +47,12 @@ export function buildApp(options: AppOptions = {}) {
   if (options.db && stats) {
     registerPlayers(app, options.db);
     registerStats(app, stats);
+    const games = createGameSummary(options.db, stats);
+    registerGameSummary(app, games);
+    if (options.statsDir) {
+      const file = writeStatsFile(options.db, games, options.statsDir);
+      app.addHook("onClose", async () => file.stop());
+    }
   }
   const tournaments = options.db ? createTournaments(options.db, stations, stats) : undefined;
   const feed = options.db ? createChangeFeed(options.db, stations) : undefined;

@@ -77,7 +77,7 @@ try {
     Step "Starte Server und Oberflaeche fuer das echte Board unter $board"
     & node scripts\n4-start.mjs --board $board
   } else {
-    Step 'Starte Server, Oberflaeche und zwei simulierte Boards'
+    Step 'Starte Server, Oberflaeche und das simulierte Board'
     & node scripts\n4-start.mjs
   }
 } catch {

@@ -14,9 +14,15 @@ See `docs/architecture.md` for the design and `docs/adr/` for the key decisions.
 
 ## Windows (lokal, ohne Internet)
 
-- **Simulator:** `start-windows.cmd` doppelklicken. Installiert bei Bedarf Node.js und die Abhaengigkeiten und startet Server, Oberflaeche und zwei simulierte Boards. Danach oeffnen sich Station 1 (<http://localhost:5173/station/1>) und das Fake-Board (<http://localhost:3180/>).
-- **Echtes Board:** Autodarts starten (der Board Manager muss auf Port 3180 antworten, z. B. <http://localhost:3180/api/version>), dann `start-echtes-board.cmd` doppelklicken und die Adresse des Autodarts-PCs eingeben (Enter = dieser PC). Station 1 wird auf dieses Board gestellt; der Simulator laeuft dabei nicht, sonst wuerde er Port 3180 belegen.
-- Ohne Windows: `node scripts/n4-start.mjs` (Simulator) bzw. `node scripts/n4-start.mjs --board http://<ip>:3180` nach `pnpm install`.
+**Fertiges Paket:** `pakete/n4-darts-windows.zip` entpacken und `Darts starten.cmd` (echtes Board) oder `Darts Simulator.cmd` doppelklicken. Braucht nur Node.js 22+, kein `pnpm install`. Gespielt wird unter <http://localhost:3000/station/1>. Spieler, Spiele und Stats liegen im Ordner `data` daneben (lesbar: `data/spieler-stats.json`). Neu bauen: `node scripts/package.mjs`.
+
+**Aus dem Quellcode** (zum Weiterentwickeln):
+
+- `start-windows.cmd`: Server, Oberflaeche (<http://localhost:5173/station/1>) und das simulierte Board (<http://localhost:3180/>).
+- `start-echtes-board.cmd`: dasselbe ohne Simulator fuer das echte Autodarts-Board (Board Manager auf Port 3180, z. B. <http://localhost:3180/api/version>); fragt nach der Adresse des Autodarts-PCs (Enter = dieser PC).
+- Ohne Windows: `node scripts/n4-start.mjs` bzw. `node scripts/n4-start.mjs --board http://<ip>:3180` nach `pnpm install`.
+
+**Spiele:** X01 (301/501/701, In-/Out-Regeln), Cricket, Around the World, Elimination; allein oder mit 2–8 Spielern. Genau ein Dartautomat (`MAX_STATIONS=1` in den Start-Dateien).
 
 ## Run it locally
 

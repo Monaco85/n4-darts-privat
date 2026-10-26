@@ -1,6 +1,6 @@
 // Choosing players and settings for a new match: the station's quick match and the tournament draft.
 
-import { type InRule, MAX_PLAYERS, type OutRule } from "@n4/engine";
+import { type GameMode, type InRule, MAX_PLAYERS, type OutRule } from "@n4/engine";
 import type { MatchSettingsInput, Player } from "@n4/server/api";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { Avatar } from "./Avatar.tsx";
@@ -8,6 +8,7 @@ import { Avatar } from "./Avatar.tsx";
 export type SetupSettings = Required<MatchSettingsInput>;
 
 export const defaultSetupSettings: SetupSettings = {
+  game: "x01",
   startScore: 301,
   inRule: "straight",
   outRule: "straight",
@@ -128,6 +129,19 @@ export function PlayerPicker(props: {
   );
 }
 
+export const GAME_NAMES: Record<GameMode, string> = {
+  x01: "X01",
+  cricket: "Cricket",
+  atc: "Around the World",
+  elimination: "Elimination",
+};
+
+/** Start scores offered per game; Cricket and Around the World have none. */
+const SCORES: Partial<Record<GameMode, number[]>> = {
+  x01: [301, 501, 701],
+  elimination: [301, 501],
+};
+
 export function legsLabel(legsToWin: number) {
   return `First to ${legsToWin} ${legsToWin === 1 ? "leg" : "legs"}`;
 }
@@ -141,36 +155,65 @@ export function SettingsFields(props: {
   const set = <K extends keyof SetupSettings>(key: K, v: SetupSettings[K]) =>
     onChange({ ...value, [key]: v });
 
+  const game = value.game ?? "x01";
+  const scores = SCORES[game];
+  const pickGame = (next: GameMode) => {
+    const allowed = SCORES[next];
+    const startScore =
+      allowed && !allowed.includes(value.startScore)
+        ? (allowed[1] ?? allowed[0])
+        : value.startScore;
+    onChange({ ...value, game: next, startScore: startScore ?? value.startScore });
+  };
   return (
     <div className="settings">
       <label>
-        Start
-        <select
-          value={value.startScore}
-          onChange={(e) => set("startScore", Number(e.target.value))}
-        >
-          {[301, 501, 701].map((s) => (
-            <option key={s}>{s}</option>
+        Game
+        <select value={game} onChange={(e) => pickGame(e.target.value as GameMode)}>
+          {(Object.keys(GAME_NAMES) as GameMode[]).map((g) => (
+            <option key={g} value={g}>
+              {GAME_NAMES[g]}
+            </option>
           ))}
         </select>
       </label>
-      <label>
-        In rule
-        <select value={value.inRule} onChange={(e) => set("inRule", e.target.value as InRule)}>
-          <option value="straight">Single</option>
-          <option value="double">Double</option>
-          <option value="master">Master</option>
-          <option value="bull">Bull</option>
-        </select>
-      </label>
-      <label>
-        Out rule
-        <select value={value.outRule} onChange={(e) => set("outRule", e.target.value as OutRule)}>
-          <option value="straight">Single</option>
-          <option value="double">Double</option>
-          <option value="master">Master</option>
-        </select>
-      </label>
+      {scores && (
+        <label>
+          {game === "elimination" ? "Target" : "Start"}
+          <select
+            value={value.startScore}
+            onChange={(e) => set("startScore", Number(e.target.value))}
+          >
+            {scores.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      {game === "x01" && (
+        <>
+          <label>
+            In rule
+            <select value={value.inRule} onChange={(e) => set("inRule", e.target.value as InRule)}>
+              <option value="straight">Single</option>
+              <option value="double">Double</option>
+              <option value="master">Master</option>
+              <option value="bull">Bull</option>
+            </select>
+          </label>
+          <label>
+            Out rule
+            <select
+              value={value.outRule}
+              onChange={(e) => set("outRule", e.target.value as OutRule)}
+            >
+              <option value="straight">Single</option>
+              <option value="double">Double</option>
+              <option value="master">Master</option>
+            </select>
+          </label>
+        </>
+      )}
       <label>
         Legs
         <select value={value.legsToWin} onChange={(e) => set("legsToWin", Number(e.target.value))}>

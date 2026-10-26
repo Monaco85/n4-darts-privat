@@ -1,6 +1,9 @@
 import {
+  ATC_TARGETS,
+  CRICKET_TARGETS,
   checkoutRoute,
   type DartView,
+  gameOf,
   MAX_PLAYERS,
   MIN_PLAYERS,
   type PlayerIndex,
@@ -97,11 +100,20 @@ function matchAction(match: MatchView, send: Send): MatchAction | undefined {
 const IN_RULES = { straight: "", double: "Double in", master: "Master in", bull: "Bull in" };
 const OUT_RULES = { straight: "Single out", double: "Double out", master: "Master out" };
 
-/** "501 · Double in · Double out". */
+/** "501 · Double in · Double out", "Cricket", "Elimination · 301". */
 export function rulesLabel(settings: X01Settings) {
-  return [settings.startScore, IN_RULES[settings.inRule], OUT_RULES[settings.outRule]]
-    .filter(Boolean)
-    .join(" · ");
+  switch (gameOf(settings)) {
+    case "cricket":
+      return "Cricket";
+    case "atc":
+      return "Around the World";
+    case "elimination":
+      return `Elimination · ${settings.startScore}`;
+    default:
+      return [settings.startScore, IN_RULES[settings.inRule], OUT_RULES[settings.outRule]]
+        .filter(Boolean)
+        .join(" · ");
+  }
 }
 
 /** The match label, rules, legs and which leg: "Group A … 501 · Double out · Best of 3 · Leg 2". */
@@ -183,7 +195,7 @@ function Lineup({ match, send }: { match: MatchView; send: Send }) {
     }
     void setOrder(next);
   };
-  const { startScore, legsToWin } = match.settings;
+  const { legsToWin } = match.settings;
 
   return (
     <div className="lineup">
@@ -192,10 +204,13 @@ function Lineup({ match, send }: { match: MatchView; send: Send }) {
         <h1>
           {match.players.length === 2
             ? match.players.map((p) => p.name).join(" vs ")
-            : "Next match"}
+            : match.players.length === 1
+              ? `${match.players[0]?.name} alone`
+              : "Next match"}
         </h1>
         <p className="hint">
-          {startScore}, {legsLabel(legsToWin).toLowerCase()}. Top of the list throws first.
+          {rulesLabel(match.settings)}, {legsLabel(legsToWin).toLowerCase()}.
+          {match.players.length > 1 ? " Top of the list throws first." : " Solo practice."}
         </p>
       </div>
       <ol className="lineup-list">
@@ -233,6 +248,20 @@ function Lineup({ match, send }: { match: MatchView; send: Send }) {
       </div>
     </div>
   );
+}
+
+/** Numbers to light on the board: the next target (Around the World) or the open ones (Cricket). */
+function boardTargets(match: MatchView): number[] {
+  const thrower = match.state.players[match.state.currentPlayer];
+  if (!thrower || match.state.phase === "matchWon") return [];
+  switch (gameOf(match.settings)) {
+    case "atc":
+      return thrower.remaining > 0 ? [thrower.remaining] : [];
+    case "cricket":
+      return CRICKET_TARGETS.filter((_, i) => (thrower.marks?.[i] ?? 0) < 3);
+    default:
+      return [];
+  }
 }
 
 /** Who throws after the current visit: the next player, or the next leg's starter after a checkout. */
@@ -276,7 +305,11 @@ function Match({ match, send }: { match: MatchView; send: Send }) {
 
       <div className="match-stage">
         <div className="stage-board">
-          <Dartboard darts={visit?.darts ?? []} coords={match.dartCoords ?? {}} />
+          <Dartboard
+            darts={visit?.darts ?? []}
+            coords={match.dartCoords ?? {}}
+            highlight={boardTargets(match)}
+          />
         </div>
         <div className="match-actions">
           <button
@@ -386,6 +419,7 @@ export function Scoreboard(props: ScoreboardProps) {
 /** The route to finish this visit for the thrower, or null when there's none to show. */
 function checkoutHint(match: MatchView): Segment[] | null {
   const { state, settings } = match;
+  if (gameOf(settings) !== "x01") return null;
   const thrower = state.players[state.currentPlayer];
   if (state.phase !== "throwing" || !thrower?.isIn) return null;
   const thrown = state.currentVisit?.darts.filter((d) => !d.ignored).length ?? 0;
@@ -409,18 +443,118 @@ function averages(match: MatchView): (number | null)[] {
   return points.map((p, i) => (darts[i] ? (p / (darts[i] as number)) * 3 : null));
 }
 
-/** This leg's visits for a player, newest first: what was scored and what was left. */
+/** Where a player starts a leg: X01 counts down, the others count up from zero. */
+function legStart(match: MatchView): number {
+  return gameOf(match.settings) === "x01" ? match.settings.startScore : 0;
+}
+
+/**
+ * This leg's visits for a player, newest first: what was scored and where that left them
+ * (X01: left; Elimination and Cricket: total; Around the World: targets done).
+ */
 function legHistory(match: MatchView, player: PlayerIndex) {
   const leg = match.state.legs.at(-1);
-  let left = match.settings.startScore;
+  const down = gameOf(match.settings) === "x01";
+  const at = match.players.map(() => legStart(match));
   const rows: { scored: string; left: number }[] = [];
   for (const visit of leg?.visits ?? []) {
-    if (visit.player !== player) continue;
     const scored = visit.darts.filter((d) => !d.ignored).reduce((n, d) => n + d.score, 0);
-    if (!visit.bust) left -= scored;
-    rows.push({ scored: visit.bust ? "Bust" : String(scored), left });
+    const before = at[visit.player] ?? 0;
+    if (!visit.bust) at[visit.player] = before + (down ? -scored : scored);
+    if (visit.player === player) {
+      rows.push({ scored: visit.bust ? "Bust" : String(scored), left: at[player] ?? 0 });
+    }
+    // Elimination: whoever this visit landed on goes back to zero.
+    for (const out of visit.eliminated ?? []) {
+      at[out] = 0;
+      if (out === player) rows.push({ scored: "Out", left: 0 });
+    }
   }
   return rows.reverse();
+}
+
+/** The headline number on a card: Around the World shows the target, Bull or done. */
+function headline(match: MatchView, remaining: number): string {
+  if (gameOf(match.settings) !== "atc") return String(remaining);
+  if (remaining === 0) return "✓";
+  return remaining === 25 ? "Bull" : String(remaining);
+}
+
+/** The line under the name: average, marks per round, progress or target. */
+function metaLine(
+  match: MatchView,
+  player: MatchView["state"]["players"][number],
+  average: number | null,
+  last: string | undefined,
+  marksPerRound: number | null,
+): string {
+  const fmt = (n: number | null, digits = 1) => (n === null ? "–" : n.toFixed(digits));
+  switch (gameOf(match.settings)) {
+    case "cricket":
+      return `MPR ${fmt(marksPerRound, 2)}`;
+    case "atc":
+      return `${player.progress ?? 0} / ${ATC_TARGETS.length} done`;
+    case "elimination":
+      return `Target ${match.settings.startScore} · Ø ${fmt(average)}${last ? ` · Last ${last}` : ""}`;
+    default:
+      return `Ø ${fmt(average)}${last ? ` · Last ${last}` : ""}`;
+  }
+}
+
+/** Cricket marks per round over the match, per player. */
+function marksPerRound(match: MatchView): (number | null)[] {
+  const { state } = match;
+  const marks = state.players.map(() => 0);
+  const darts = state.players.map(() => 0);
+  const visits = state.legs.flatMap((leg) => leg.visits);
+  if (state.currentVisit) visits.push(state.currentVisit);
+  for (const visit of visits) {
+    for (const d of visit.darts) {
+      if (d.ignored) continue;
+      darts[visit.player] = (darts[visit.player] ?? 0) + 1;
+      marks[visit.player] = (marks[visit.player] ?? 0) + (d.marks ?? 0);
+    }
+  }
+  return marks.map((m, i) => (darts[i] ? (m / (darts[i] as number)) * 3 : null));
+}
+
+/** One cricket mark count drawn as on a chalkboard: /, X, or a circled X when closed. */
+function Mark({ count }: { count: number }) {
+  if (count <= 0) return <span className="mark empty" />;
+  return (
+    <svg className={`mark m${Math.min(count, 3)}`} viewBox="0 0 20 20" aria-hidden="true">
+      <line x1="4" y1="16" x2="16" y2="4" />
+      {count >= 2 && <line x1="4" y1="4" x2="16" y2="16" />}
+      {count >= 3 && <circle cx="10" cy="10" r="8" />}
+    </svg>
+  );
+}
+
+/** Around the World: 1 to 20 and the bull, done ones lit. */
+function AtcProgress({ done }: { done: number }) {
+  return (
+    <ol className="atc-progress" aria-label={`${done} of ${ATC_TARGETS.length} done`}>
+      {ATC_TARGETS.map((n, i) => (
+        <li key={n} className={i < done ? "done" : i === done ? "next" : undefined}>
+          {n === 25 ? "B" : n}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** A player's cricket marks: one row per number, 20 down to the bull. */
+function CricketMarks({ marks }: { marks: number[] }) {
+  return (
+    <ol className="cricket-marks" aria-label="Marks">
+      {CRICKET_TARGETS.map((n, i) => (
+        <li key={n} className={(marks[i] ?? 0) >= 3 ? "closed" : undefined}>
+          <span>{n === 25 ? "B" : n}</span>
+          <Mark count={marks[i] ?? 0} />
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 /**
@@ -429,11 +563,14 @@ function legHistory(match: MatchView, player: PlayerIndex) {
  */
 export function PlayerCards({ match, hints = false }: { match: MatchView; hints?: boolean }) {
   const { state, players, settings } = match;
+  const game = gameOf(settings);
   const route = hints ? checkoutHint(match) : null;
   const avg = averages(match);
+  const mpr = game === "cricket" ? marksPerRound(match) : [];
+  const size = players.length > 2 ? "many" : players.length === 1 ? "solo" : "";
 
   return (
-    <div className={`scoreboard ${players.length > 2 ? "many" : ""}`}>
+    <div className={`scoreboard ${size} game-${game}`}>
       {state.players.map((player, p) => {
         const active = state.currentPlayer === p;
         const history = legHistory(match, p);
@@ -441,7 +578,7 @@ export function PlayerCards({ match, hints = false }: { match: MatchView; hints?
         return (
           <div key={players[p]?.id ?? p} className={`player ${active ? "active" : ""}`}>
             <div className="player-main">
-              <div className="remaining">{player.remaining}</div>
+              <div className="remaining">{headline(match, player.remaining)}</div>
               <div className="player-id">
                 {settings.legsToWin > 1 && <span className="legs-badge">{player.legsWon}</span>}
                 {players[p] && <Avatar player={players[p]} />}
@@ -451,10 +588,7 @@ export function PlayerCards({ match, hints = false }: { match: MatchView; hints?
                 {!player.isIn ? (
                   <span className="not-in">Not in</span>
                 ) : (
-                  <>
-                    Ø {average === null ? "–" : average.toFixed(1)}
-                    {history[0] && <> · Last {history[0].scored}</>}
-                  </>
+                  metaLine(match, player, average, history[0]?.scored, mpr[p] ?? null)
                 )}
               </div>
               {hints && (
@@ -468,19 +602,28 @@ export function PlayerCards({ match, hints = false }: { match: MatchView; hints?
                 </div>
               )}
             </div>
-            <ol className="player-history wide-only" aria-label="This leg">
-              <li className="history-start">
-                <span />
-                <span>{settings.startScore}</span>
-              </li>
-              {[...history].reverse().map((row, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: visits have no id; order is fixed.
-                <li key={i} className={row.scored === "Bust" ? "bust" : undefined}>
-                  <span>{row.scored}</span>
-                  <span>{row.left}</span>
+            {game === "cricket" ? (
+              <CricketMarks marks={player.marks ?? []} />
+            ) : game === "atc" ? (
+              <AtcProgress done={player.progress ?? 0} />
+            ) : (
+              <ol className="player-history wide-only" aria-label="This leg">
+                <li className="history-start">
+                  <span />
+                  <span>{legStart(match)}</span>
                 </li>
-              ))}
-            </ol>
+                {[...history].reverse().map((row, i) => (
+                  <li
+                    // biome-ignore lint/suspicious/noArrayIndexKey: visits have no id; order is fixed.
+                    key={i}
+                    className={row.scored === "Bust" || row.scored === "Out" ? "bust" : undefined}
+                  >
+                    <span>{row.scored}</span>
+                    <span>{row.left}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         );
       })}

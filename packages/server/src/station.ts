@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
 import {
   defaultX01Settings,
+  GAME_MODES,
   isSegment,
   MAX_PLAYERS,
   type MatchState,
@@ -107,14 +108,19 @@ export function createStation(options: { id: number; db: Db; board: BoardControl
   /** Board positions of the current visit's darts, for the station's dartboard. */
   function visitCoords(current: MatchState): Record<string, { x: number; y: number }> {
     const ids = new Set((current.currentVisit?.darts ?? []).map((d) => d.dartId));
-    const corrected = new Set(
-      events.flatMap((e) => (e.type === "DartCorrected" ? [e.dartId] : [])),
-    );
     const coords: Record<string, { x: number; y: number }> = {};
-    for (const e of events) {
-      if (e.type !== "DartThrown" || !ids.has(e.dartId) || corrected.has(e.dartId)) continue;
+    if (ids.size === 0) return coords;
+    // Walk back from the newest event: the visit's darts and their corrections are all recent,
+    // so this stays cheap however long the match gets.
+    const corrected = new Set<string>();
+    let left = ids.size;
+    for (let i = events.length - 1; i >= 0 && left > 0; i--) {
+      const e = events[i] as StoredEvent;
+      if (e.type === "DartCorrected") corrected.add(e.dartId);
+      if (e.type !== "DartThrown" || !ids.has(e.dartId)) continue;
+      left -= 1;
       const at = e.coords as { x: number; y: number } | undefined;
-      if (at && !e.bouncer) coords[e.dartId] = { x: at.x, y: at.y };
+      if (at && !e.bouncer && !corrected.has(e.dartId)) coords[e.dartId] = { x: at.x, y: at.y };
     }
     return coords;
   }
@@ -161,6 +167,9 @@ export function createStation(options: { id: number; db: Db; board: BoardControl
     }
     if (!Number.isInteger(settings.legsToWin) || settings.legsToWin < 1) {
       throw new CommandError("legs to win must be a whole number of at least 1");
+    }
+    if (!GAME_MODES.includes(settings.game ?? "x01")) {
+      throw new CommandError("unknown game");
     }
     const matchId = randomUUID();
     db.createMatch({ id: matchId, station: id, settings, playerIds: [...input.playerIds] });

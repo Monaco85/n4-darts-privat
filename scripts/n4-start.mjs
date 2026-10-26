@@ -1,5 +1,5 @@
-// Startet n4-darts: Server (:3000) und Web-Oberflaeche (:5173), dazu
-//  - ohne Argument zwei simulierte Boards (:3180/:3181), oder
+// Startet n4-darts mit genau einem Dartautomaten: Server (:3000) und Web-Oberflaeche (:5173), dazu
+//  - ohne Argument ein simuliertes Board (:3180), oder
 //  - mit `--board <adresse>` das echte Autodarts-Board (Board Manager 2, Port 3180) fuer Station 1.
 // Aufruf aus dem n4-darts-Ordner: node scripts/n4-start.mjs [--board http://localhost:3180]
 // (oder start-windows.cmd / start-echtes-board.cmd doppelklicken)
@@ -14,12 +14,20 @@ const real = board !== null;
 const root = join(import.meta.dirname, "..");
 const env = {
   ...process.env,
-  STATIONS: real ? `1=${board}` : "1=http://localhost:3180,2=http://localhost:3181",
+  STATIONS: `1=${real ? board : "http://localhost:3180"}`,
+  // Ein Dartautomat: weitere Stationen werden beim Start entfernt und lassen sich nicht anlegen.
+  MAX_STATIONS: "1",
 };
 const parts = [
   ...(real
     ? []
-    : [["sim   ", "tools/board-sim", ["--experimental-strip-types", "src/cli.ts", "--boards", "2"]]]),
+    : [
+        [
+          "sim   ",
+          "tools/board-sim",
+          ["--experimental-strip-types", "src/cli.ts", "--boards", "1"],
+        ],
+      ]),
   [
     "server",
     "packages/server",
@@ -72,7 +80,9 @@ async function pointStationAtBoard() {
       body: JSON.stringify({ id: 1, name: "Station 1", boardUrl: board }),
     });
   } else if (!res.ok) {
-    console.log(`Hinweis: Station 1 nicht umgestellt (${res.status}). In /admin -> Stations pruefen.`);
+    console.log(
+      `Hinweis: Station 1 nicht umgestellt (${res.status}). In /admin -> Stations pruefen.`,
+    );
   }
 }
 
@@ -86,7 +96,8 @@ async function boardVersion() {
   }
 }
 
-const ready = (await up("http://localhost:5173/")) && (await up("http://localhost:3000/api/health"));
+const ready =
+  (await up("http://localhost:5173/")) && (await up("http://localhost:3000/api/health"));
 if (!ready) {
   console.log("Start hat zu lange gedauert - siehe Meldungen oben.");
 } else {

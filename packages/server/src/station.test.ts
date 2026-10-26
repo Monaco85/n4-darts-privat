@@ -380,7 +380,7 @@ describe("setting up a match", () => {
   });
 
   it.each([
-    ["one player", ["ann"]],
+    ["no players", []],
     ["nine players", ["ann", "bob", "cid", "dee", "eve", "ann", "bob", "cid", "dee"]],
     ["the same player twice", ["ann", "ann"]],
     ["an unknown player", ["ann", "zed"]],
@@ -389,6 +389,25 @@ describe("setting up a match", () => {
     const server = await startServer(tempDb());
 
     expect((await server.command(quick(ids))).status).toBe(409);
+  });
+
+  it("lets one player practise alone", async () => {
+    sim = await createBoardSim();
+    const server = await startServer(tempDb());
+
+    expect((await server.command(quick(["ann"]))).status).toBe(200);
+  });
+
+  it("refuses an unknown game", async () => {
+    sim = await createBoardSim();
+    const server = await startServer(tempDb());
+
+    const res = await server.command({
+      type: "quickMatch",
+      playerIds: ["ann", "bob"],
+      settings: { game: "golf" as never },
+    });
+    expect(res.status).toBe(409);
   });
 
   it("refuses an archived player", async () => {

@@ -42,7 +42,7 @@ describe("starting a match", () => {
     expect(state.players.every((p) => p.remaining === 301 && p.legsWon === 0)).toBe(true);
   });
 
-  it.each([1, 9])("refuses a match with %i players", (count) => {
+  it.each([0, 9])("refuses a match with %i players", (count) => {
     expect(() => play([start(count)])).toThrow();
   });
 

@@ -1,9 +1,13 @@
 // X01 rules as a pure fold over a match's event log (docs/adr/0002, 0003).
+// The other games (Cricket, Around the World, Elimination) live in games.ts.
+
+import { gameState } from "./games.ts";
 
 /** A player's place in the match's throwing order; player 0 starts leg 1. */
 export type PlayerIndex = number;
 
-export const MIN_PLAYERS = 2;
+/** One player may play alone (practice); a tournament still pairs players up. */
+export const MIN_PLAYERS = 1;
 export const MAX_PLAYERS = 8;
 
 /** Bumped whenever the rules change, so old matches replay under the rules they were played with. */
@@ -26,7 +30,14 @@ export function isSegment(value: unknown): value is Segment {
 export type InRule = "straight" | "double" | "master" | "bull";
 export type OutRule = "straight" | "double" | "master";
 
+/** What is played: X01 (301/501/701), Cricket, Around the World or Elimination. */
+export type GameMode = "x01" | "cricket" | "atc" | "elimination";
+export const GAME_MODES: readonly GameMode[] = ["x01", "cricket", "atc", "elimination"];
+
 export interface X01Settings {
+  /** Missing on matches from before there were other games: X01. */
+  game?: GameMode;
+  /** X01: the score to bring down to zero. Elimination: the score to reach exactly. */
   startScore: number;
   inRule: InRule;
   outRule: OutRule;
@@ -34,7 +45,11 @@ export interface X01Settings {
   rulesVersion: number;
 }
 
+/** The game a match plays; older matches have none and are X01. */
+export const gameOf = (settings: Pick<X01Settings, "game">): GameMode => settings.game ?? "x01";
+
 export const defaultX01Settings: X01Settings = {
+  game: "x01",
   startScore: 301,
   inRule: "straight",
   outRule: "straight",
@@ -51,10 +66,18 @@ export type MatchEvent =
   | { type: "VisitUndone" };
 
 export interface PlayerState {
+  /**
+   * The player's headline number. X01: left to score. Cricket: points. Around the World: the
+   * number to hit next (25 = bull, 0 = done). Elimination: the score so far.
+   */
   remaining: number;
   legsWon: number;
   /** Whether the in rule has been met this leg. */
   isIn: boolean;
+  /** Cricket: marks on 20, 19, 18, 17, 16, 15 and bull (`CRICKET_TARGETS`), 3 = closed. */
+  marks?: number[];
+  /** Around the World: how many targets are done (0–21). */
+  progress?: number;
 }
 
 export type Phase = "notStarted" | "throwing" | "awaitingTakeout" | "matchWon";
@@ -65,6 +88,8 @@ export interface DartView {
   score: number;
   /** Thrown after the visit was already over (third dart, bust or checkout); counts for nothing. */
   ignored: boolean;
+  /** Cricket: marks this dart scored on an open or closing number. */
+  marks?: number;
 }
 
 export interface VisitView {
@@ -74,6 +99,8 @@ export interface VisitView {
   bust: boolean;
   /** Finished the leg. */
   checkout: boolean;
+  /** Elimination: players this visit sent back to zero. */
+  eliminated?: PlayerIndex[];
 }
 
 export interface LegView {
@@ -94,14 +121,14 @@ export interface MatchState {
   winner: PlayerIndex | null;
 }
 
-interface RawVisit {
+export interface RawVisit {
   darts: { dartId: string; segment: Segment }[];
   /** Ended by takeout or manually; only the last visit can be open. */
   closed: boolean;
 }
 
 /** Groups the event log into visits, independent of scoring. Corrections replace segments in place. */
-function visitsOf(events: MatchEvent[]): RawVisit[] {
+export function visitsOf(events: MatchEvent[]): RawVisit[] {
   const corrected = new Map<string, Segment>();
   for (const event of events) {
     if (event.type === "DartCorrected") corrected.set(event.dartId, event.segment);
@@ -140,6 +167,7 @@ export function matchState(settings: X01Settings, events: MatchEvent[]): MatchSt
   if (settings.rulesVersion !== RULES_VERSION) {
     throw new Error(`unknown X01 rules version ${settings.rulesVersion}`);
   }
+  if (gameOf(settings) !== "x01") return gameState(settings, events);
   const startIndex = events.findIndex((e) => e.type === "MatchStarted");
   const started = events[startIndex];
   const inFromStart = settings.inRule === "straight";

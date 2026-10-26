@@ -48,7 +48,7 @@ function MatchLine({ match }: { match: MatchView }) {
   const { settings, state } = match;
   return (
     <span className="watch-line">
-      {settings.startScore} · {legsLabel(settings.legsToWin)}
+      {rulesLabel(settings)} · {legsLabel(settings.legsToWin)}
       {settings.legsToWin > 1 && (
         <>
           {" "}

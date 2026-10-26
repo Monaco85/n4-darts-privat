@@ -2,7 +2,13 @@
 // (completed, not abandoned, not a walkover, any kind and player count), from the event logs.
 // A closed match's numbers are cached until the match changes (e.g. a correction).
 
-import { matchState, matchStats, type PlayerMatchStats, threeDartAverage } from "@n4/engine";
+import {
+  gameOf,
+  matchState,
+  matchStats,
+  type PlayerMatchStats,
+  threeDartAverage,
+} from "@n4/engine";
 import type { FastifyInstance } from "fastify";
 import type { Award, LeaderboardRow, PlayerProfile, StatTotals } from "./api.ts";
 import type { Db, MatchRecord, StoredEvent } from "./db.ts";
@@ -102,9 +108,10 @@ export function createStats(db: Db) {
   }
   const ofMatch = (match: MatchRecord) => cached(match).stats;
 
-  /** The player's own numbers per counted match, newest first. */
+  /** The player's own numbers per counted X01 match, newest first (other games: gameSummary.ts). */
   function countedOf(playerId: string) {
     return db.completedMatchesOf(playerId, ALL).flatMap((match) => {
+      if (gameOf(match.settings) !== "x01") return [];
       const own = ofMatch(match)[match.playerIds.indexOf(playerId)];
       return own ? [{ match, own }] : [];
     });

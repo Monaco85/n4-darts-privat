@@ -61,10 +61,12 @@ const BOARD = (() => {
 interface Props {
   darts: DartView[];
   coords: Record<string, { x: number; y: number }>;
+  /** Numbers to light up (25 = bull): the next target, or the numbers still open. */
+  highlight?: number[];
 }
 
 /** The dartboard with this visit's darts where the board saw them, numbered in throwing order. */
-export function Dartboard({ darts, coords }: Props) {
+export function Dartboard({ darts, coords, highlight = [] }: Props) {
   const placed = darts.flatMap((dart, i) => {
     const at = coords[dart.dartId];
     return at ? [{ dart, i, x: at.x * MM_PER_UNIT, y: -at.y * MM_PER_UNIT }] : [];
@@ -87,6 +89,22 @@ export function Dartboard({ darts, coords }: Props) {
       <circle className="db-ring-green" r={R.outerBull} />
       <circle className="db-ring-red" r={R.bull} />
       <circle className="db-wire" r={R.doubleOuter} />
+      {highlight.map((n) => {
+        if (n === 25) return <circle key="hb" className="db-target" r={R.outerBull} />;
+        const i = ORDER.indexOf(n);
+        if (i < 0) return null;
+        const from = i * 18 - 9;
+        const [x, y] = point(i * 18, R.numbers);
+        return (
+          <g key={`h${n}`}>
+            <path className="db-target" d={wedge(from, from + 18, R.outerBull, R.doubleOuter)} />
+            <circle className="db-target-number" cx={x} cy={y} r={17} />
+            <text className="db-number db-number-target" x={x} y={y} dominantBaseline="central">
+              {n}
+            </text>
+          </g>
+        );
+      })}
       {placed.map(({ dart, i, x, y }) => (
         <g
           key={dart.dartId}

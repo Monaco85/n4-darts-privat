@@ -74,7 +74,12 @@ const cleanName = (value: unknown, id: number) =>
 
 export function createStationRegistry(
   db: Db,
-  options: { seed?: string | undefined; gatewayOptions?: Partial<BoardGatewayOptions> } = {},
+  options: {
+    seed?: string | undefined;
+    gatewayOptions?: Partial<BoardGatewayOptions>;
+    /** At most this many stations (boards); extra ones without a match are removed at start. */
+    maxStations?: number | undefined;
+  } = {},
 ): StationRegistry {
   interface Entry {
     station: Station;
@@ -116,7 +121,15 @@ export function createStationRegistry(
     seeded = true;
   }
   if (options.seed) db.markStationsSeeded();
-  for (const config of db.stationConfigs()) start(config);
+  const max = options.maxStations;
+  const configs = [...db.stationConfigs()].sort((a, b) => a.id - b.id);
+  for (const [i, config] of configs.entries()) {
+    if (max !== undefined && i >= max && !db.openMatchOn(config.id)) {
+      db.deleteStation(config.id);
+      continue;
+    }
+    start(config);
+  }
 
   const sorted = () => [...entries.entries()].sort(([a], [b]) => a - b).map(([, e]) => e);
 
@@ -132,6 +145,12 @@ export function createStationRegistry(
         throw new StationConfigError("the station number must be a whole number from 1", 400);
       }
       if (entries.has(id)) throw new StationConfigError(`station ${id} already exists`, 409);
+      if (max !== undefined && entries.size >= max) {
+        throw new StationConfigError(
+          max === 1 ? "only one board is set up here" : `at most ${max} boards`,
+          409,
+        );
+      }
       const config = { id, name: cleanName(input.name, id), boardUrl: checkUrl(input.boardUrl) };
       db.saveStation(config);
       start(config);

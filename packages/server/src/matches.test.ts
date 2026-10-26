@@ -82,7 +82,7 @@ describe("creating matches in /admin", () => {
     const { create } = setup();
 
     expect((await create({ station: 9, playerIds: ["ann", "bob"] })).statusCode).toBe(404);
-    expect((await create({ station: 1, playerIds: ["ann"] })).statusCode).toBe(409);
+    expect((await create({ station: 1, playerIds: [] })).statusCode).toBe(409);
     expect((await create({ station: 1, playerIds: "ann" })).statusCode).toBe(400);
   });
 

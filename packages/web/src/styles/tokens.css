@@ -4,32 +4,32 @@
  */
 
 :root {
-  /* Grounds, darkest first: deep navy, as on Autodarts. */
-  --bg: #0b0f2b;
-  --panel: #151b47;
-  --surface: #1c2356;
-  --line-soft: #262f66;
-  --border: #36407e;
+  /* Grounds, darkest first: black and charcoal, red accents, as on the Winmau Blade 6. */
+  --bg: #08080a;
+  --panel: #141416;
+  --surface: #1c1c1f;
+  --line-soft: #26262a;
+  --border: #38383d;
 
   --text: #ffffff;
-  --muted: #a4acd8;
-  --faint: #4f5892;
+  --muted: #a9a9b0;
+  --faint: #55555c;
 
-  --accent: #7c93ff;
-  --accent-text: #0b0f2b;
-  --accent-tint: #1f2a6b;
-  --accent-line: #4a5bc4;
+  --accent: #e3242f;
+  --accent-text: #ffffff;
+  --accent-tint: #2a0d10;
+  --accent-line: #8a1c24;
 
   --ok: #3ddc84;
-  --ok-tint: #0f2a2a;
+  --ok-tint: #0f2a1d;
   --ok-line: #1f6b4f;
   --warn: #ffb547;
-  --warn-tint: #2a2120;
+  --warn-tint: #2a2117;
   --warn-line: #7a5520;
   --danger: #ff5a5f;
-  --danger-tint: #2c1530;
-  --danger-line: #7a2a40;
-  --danger-faint: #8a5a6e;
+  --danger-tint: #2c1214;
+  --danger-line: #7a2a30;
+  --danger-faint: #8a5a5e;
 
   /* Glass panels over the background gradient. */
   --glass: rgb(255 255 255 / 0.06);

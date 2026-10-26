@@ -1,5 +1,5 @@
 /*
- * The modern theme (Branch "lokal"): Inter, a deep navy gradient, glass panels and rounded
+ * The modern theme (Branch "lokal"): Inter, black and red like the Winmau Blade 6, glass panels and rounded
  * corners, and the station's match screen laid out like Autodarts, with the board in the middle.
  * Loaded last, so it refines the pieces above without rewriting them.
  */
@@ -9,9 +9,9 @@
 body {
   min-height: 100dvh;
   background:
-    radial-gradient(1100px 700px at 15% -10%, #3b3399 0%, transparent 60%),
-    radial-gradient(900px 700px at 105% 105%, #4b2185 0%, transparent 55%),
-    linear-gradient(160deg, #121845 0%, #0b0f2b 100%);
+    radial-gradient(1100px 700px at 12% -12%, rgb(200 16 46 / 0.38) 0%, transparent 60%),
+    radial-gradient(900px 700px at 108% 108%, rgb(200 16 46 / 0.22) 0%, transparent 55%),
+    linear-gradient(160deg, #18181b 0%, #08080a 100%);
   background-attachment: fixed;
   font-feature-settings: "tnum", "cv11";
   -webkit-font-smoothing: antialiased;
@@ -54,14 +54,14 @@ button:not(:disabled):active {
 button.primary,
 .button.primary {
   border: 0;
-  background: linear-gradient(135deg, #6f86ff 0%, #8b66ff 100%);
+  background: linear-gradient(135deg, #e3242f 0%, #a30d1c 100%);
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 6px 24px rgb(111 134 255 / 0.35);
+  box-shadow: 0 6px 24px rgb(227 36 47 / 0.35);
 }
 
 button.primary:not(:disabled):hover {
-  background: linear-gradient(135deg, #8195ff 0%, #9b7bff 100%);
+  background: linear-gradient(135deg, #f0343f 0%, #b8111f 100%);
 }
 
 button.cta,
@@ -109,7 +109,7 @@ select {
   position: relative;
   z-index: 20;
   border-bottom: 1px solid var(--glass-line);
-  background: rgb(8 11 35 / 0.55);
+  background: rgb(8 8 10 / 0.65);
   backdrop-filter: blur(10px);
 }
 
@@ -169,10 +169,10 @@ select {
 
 .scoreboard .player.active,
 .scoreboard.many .player.active {
-  border: 2px solid #a9b8ff;
-  background: rgb(124 147 255 / 0.16);
+  border: 2px solid #e3242f;
+  background: rgb(227 36 47 / 0.12);
   box-shadow:
-    0 0 0 4px rgb(124 147 255 / 0.14),
+    0 0 0 4px rgb(227 36 47 / 0.14),
     0 12px 40px rgb(0 0 0 / 0.35);
 }
 
@@ -226,8 +226,8 @@ select {
   min-width: 26px;
   padding: 2px 7px;
   border-radius: 6px;
-  background: var(--ok);
-  color: #062a19;
+  background: var(--accent);
+  color: #fff;
   font-weight: 800;
   font-size: 15px;
   text-align: center;
@@ -443,7 +443,7 @@ select {
   padding: 6px;
   border: 1px solid var(--accent-line);
   border-radius: 12px;
-  background: rgb(124 147 255 / 0.22);
+  background: rgb(227 36 47 / 0.18);
   text-align: center;
 }
 
@@ -573,7 +573,7 @@ select {
   width: min(100%, 420px);
   height: auto;
   aspect-ratio: 1;
-  filter: drop-shadow(0 0 18px rgb(61 220 132 / 0.55)) drop-shadow(0 0 60px rgb(61 220 132 / 0.22));
+  filter: drop-shadow(0 0 18px rgb(227 36 47 / 0.6)) drop-shadow(0 0 60px rgb(227 36 47 / 0.25));
 }
 
 @media (min-width: 760px) {
@@ -683,17 +683,17 @@ select {
 }
 
 .db-dart-halo {
-  fill: rgb(124 147 255 / 0.35);
+  fill: rgb(255 255 255 / 0.3);
 }
 
 .db-dart-dot {
   fill: #fff;
-  stroke: #0b0f2b;
+  stroke: #08080a;
   stroke-width: 2.5;
 }
 
 .db-dart-index {
-  fill: #0b0f2b;
+  fill: #08080a;
   font-family: var(--font-text);
   font-weight: 800;
   font-size: 12px;
@@ -701,11 +701,11 @@ select {
 }
 
 .db-dart.latest .db-dart-dot {
-  fill: #ffd84a;
+  fill: #e3242f;
 }
 
 .db-dart.latest .db-dart-halo {
-  fill: rgb(255 216 74 / 0.4);
+  fill: rgb(227 36 47 / 0.45);
 }
 
 .db-dart.ignored {
@@ -915,4 +915,113 @@ select {
 .watch-dart,
 .watch-visit-total {
   font-weight: 800;
+}
+
+/* ---------- One player, and the other games ---------- */
+
+.scoreboard.solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Cricket: a column of numbers with chalk marks beside the points. */
+.cricket-marks {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 2px;
+  min-width: 96px;
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 1px solid var(--glass-line);
+  list-style: none;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.cricket-marks li {
+  display: grid;
+  grid-template-columns: 28px 22px;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.cricket-marks li.closed {
+  color: var(--text);
+}
+
+.mark {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.mark.m3 {
+  stroke: var(--accent);
+}
+
+.mark.empty {
+  display: inline-block;
+}
+
+/* Around the World: 1–20 and the bull, done ones lit. */
+.atc-progress {
+  display: grid;
+  grid-template-columns: repeat(7, 26px);
+  align-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 1px solid var(--glass-line);
+  list-style: none;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.atc-progress li {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  border: 1px solid var(--glass-line);
+  border-radius: 6px;
+  color: var(--faint);
+}
+
+.atc-progress li.done {
+  border-color: var(--accent-line);
+  background: rgb(227 36 47 / 0.25);
+  color: var(--text);
+}
+
+.atc-progress li.next {
+  border: 2px solid var(--accent);
+  color: var(--text);
+}
+
+@media (max-width: 759px) {
+  .cricket-marks,
+  .atc-progress {
+    display: none;
+  }
+}
+
+/* The numbers to aim at, lit on the board. */
+.db-target {
+  fill: rgb(227 36 47 / 0.32);
+  stroke: #ff6b73;
+  stroke-width: 1.5;
+}
+
+.db-target-number {
+  fill: var(--accent);
+}
+
+.db-number-target {
+  fill: #fff;
+}
+
+.game-shot {
+  color: var(--accent);
 }
