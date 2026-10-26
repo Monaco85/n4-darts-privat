@@ -14,6 +14,7 @@ import type { MatchView, StationCommand } from "@n4/server/api";
 import { Fragment, type ReactNode, useState } from "react";
 import { Avatar } from "./Avatar.tsx";
 import { BoardMenu, type MatchAction } from "./BoardMenu.tsx";
+import { Confetti, Trophy, winnerFacts } from "./Celebration.tsx";
 import { Dartboard } from "./Dartboard.tsx";
 import { dartLabel } from "./darts.ts";
 import { Logo } from "./Logo.tsx";
@@ -363,17 +364,32 @@ export function MatchOver({ match, children }: { match: MatchView; children?: Re
   const { state, players, settings } = match;
   const winner = state.winner ?? 0;
   const winnerPlayer = players[winner];
+  const facts = winnerFacts(match);
   return (
     <section className="match-over">
+      <Confetti />
+      <div className="match-over-trophy">
+        <Trophy />
+      </div>
       <h1 className="game-shot">Game shot</h1>
       <div className="match-over-result">
         {winnerPlayer && (
-          <span className="avatar-frame">
+          <span className="avatar-frame winner-avatar">
             <Avatar player={winnerPlayer} large />
           </span>
         )}
         <div className="match-over-text">
           <p className="match-over-winner">{winnerPlayer?.name ?? "?"} wins</p>
+          {facts.length > 0 && (
+            <ul className="winner-facts">
+              {facts.map((f) => (
+                <li key={f.label}>
+                  <span className="winner-fact-value">{f.value}</span>
+                  <span className="label">{f.label}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {settings.legsToWin > 1 &&
             (players.length === 2 ? (
               <div className="legs-result">
