@@ -1025,3 +1025,105 @@ select {
 .game-shot {
   color: var(--accent);
 }
+
+/* ---------- Correcting a dart by touch: press, slide, release ---------- */
+
+.overlay {
+  background: rgb(8 8 10 / 0.92);
+  backdrop-filter: blur(6px);
+}
+
+.picker-body {
+  display: grid;
+  gap: 20px;
+}
+
+.picker-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.picker-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.picker-board-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.touch-board {
+  width: min(100%, 520px);
+  height: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+
+.touch-field {
+  fill: rgb(255 255 255 / 0.55);
+  stroke: #fff;
+  stroke-width: 2.5;
+}
+
+.touch-field.miss {
+  fill: rgb(227 36 47 / 0.35);
+}
+
+.touch-dot {
+  fill: var(--accent);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.touch-bubble {
+  fill: var(--accent);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.touch-label {
+  fill: #fff;
+  font-family: var(--font-text);
+  font-weight: 800;
+  font-size: 30px;
+  text-anchor: middle;
+}
+
+@media (min-width: 900px) {
+  .picker-body {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .touch-board {
+    width: min(100%, 72vh);
+  }
+}
+
+@media (min-width: 900px) {
+  .picker {
+    max-width: 1500px;
+  }
+
+  .picker-fields .number-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .picker-fields .number-grid button {
+    min-height: 76px;
+    font-size: 40px;
+  }
+}
+
+.db-dart-hit {
+  fill: transparent;
+}

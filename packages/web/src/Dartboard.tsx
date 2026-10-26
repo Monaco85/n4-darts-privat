@@ -1,5 +1,5 @@
-import type { DartView } from "@n4/engine";
-import type { ReactElement } from "react";
+import type { DartView, Segment } from "@n4/engine";
+import { type PointerEvent, type ReactElement, useState } from "react";
 import { dartLabel } from "./darts.ts";
 
 /** Clockwise from the top, as on the board. */
@@ -63,10 +63,12 @@ interface Props {
   coords: Record<string, { x: number; y: number }>;
   /** Numbers to light up (25 = bull): the next target, or the numbers still open. */
   highlight?: number[];
+  /** Tapping a dart on the board, e.g. to correct it. */
+  onDart?: (dart: DartView) => void;
 }
 
 /** The dartboard with this visit's darts where the board saw them, numbered in throwing order. */
-export function Dartboard({ darts, coords, highlight = [] }: Props) {
+export function Dartboard({ darts, coords, highlight = [], onDart }: Props) {
   const placed = darts.flatMap((dart, i) => {
     const at = coords[dart.dartId];
     return at ? [{ dart, i, x: at.x * MM_PER_UNIT, y: -at.y * MM_PER_UNIT }] : [];
@@ -110,7 +112,19 @@ export function Dartboard({ darts, coords, highlight = [] }: Props) {
           key={dart.dartId}
           className={`db-dart ${dart.dartId === latest ? "latest" : ""} ${dart.ignored ? "ignored" : ""}`}
           transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`}
+          {...(onDart && {
+            role: "button",
+            tabIndex: 0,
+            "aria-label": `Dart ${i + 1} on the board: ${dartLabel(dart.segment)}, tap to correct`,
+            onClick: () => onDart(dart),
+            onKeyDown: (e: { key: string }) => {
+              if (e.key === "Enter" || e.key === " ") onDart(dart);
+            },
+            style: { cursor: "pointer" },
+          })}
         >
+          {/* A bigger, invisible target than the dot, for fingers. */}
+          {onDart && <circle className="db-dart-hit" r={28} />}
           <circle className="db-dart-halo" r={15} />
           <circle className="db-dart-dot" r={9} />
           <text className="db-dart-index" dominantBaseline="central">
@@ -120,4 +134,123 @@ export function Dartboard({ darts, coords, highlight = [] }: Props) {
       ))}
     </svg>
   );
+}
+
+/** Where a point on the board lands, in mm from the bull (y down, as in the SVG). */
+export function segmentAt(
+  x: number,
+  y: number,
+): { segment: Segment; band: [number, number]; index: number } {
+  const r = Math.hypot(x, y);
+  // Clockwise from the top, like ORDER; each wedge spans ±9° around its number.
+  const degrees = ((Math.atan2(x, -y) * 180) / Math.PI + 360) % 360;
+  const index = Math.round(degrees / 18) % 20;
+  const number = ORDER[index] as number;
+  if (r <= R.bull) return { segment: { number: 25, multiplier: 2 }, band: [0, R.bull], index: -1 };
+  if (r <= R.outerBull) {
+    return { segment: { number: 25, multiplier: 1 }, band: [R.bull, R.outerBull], index: -1 };
+  }
+  if (r < R.trebleInner)
+    return { segment: { number, multiplier: 1 }, band: [R.outerBull, R.trebleInner], index };
+  if (r <= R.trebleOuter)
+    return { segment: { number, multiplier: 3 }, band: [R.trebleInner, R.trebleOuter], index };
+  if (r < R.doubleInner)
+    return { segment: { number, multiplier: 1 }, band: [R.trebleOuter, R.doubleInner], index };
+  if (r <= R.doubleOuter)
+    return { segment: { number, multiplier: 2 }, band: [R.doubleInner, R.doubleOuter], index };
+  return { segment: { number: 0, multiplier: 0 }, band: [R.doubleOuter, R.frame], index: -2 };
+}
+
+/**
+ * A big board to correct a dart by touch: press, slide to the right field (it lights up and its
+ * name shows above the finger), and release to log it. Lifting off the board logs nothing.
+ */
+export function TouchDartboard({ onPick }: { onPick(segment: Segment): void }) {
+  const [aim, setAim] = useState<{
+    x: number;
+    y: number;
+    hit: ReturnType<typeof segmentAt>;
+  } | null>(null);
+
+  const at = (e: PointerEvent<SVGSVGElement>) => {
+    const svg = e.currentTarget;
+    const matrix = svg.getScreenCTM();
+    if (!matrix) return null;
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse());
+    if (Math.hypot(p.x, p.y) > R.frame) return null;
+    return { x: p.x, y: p.y, hit: segmentAt(p.x, p.y) };
+  };
+
+  const shape = aim ? aimShape(aim.hit) : null;
+  const label = aim ? dartLabel(aim.hit.segment) : "";
+  // Keep the bubble on the board and clear of the finger.
+  const bubbleY = aim ? Math.max(-R.frame + 34, aim.y - 70) : 0;
+  const bubbleX = aim ? Math.min(R.frame - 60, Math.max(-R.frame + 60, aim.x)) : 0;
+
+  return (
+    <svg
+      className="dartboard touch-board"
+      viewBox={`${-R.frame} ${-R.frame} ${R.frame * 2} ${R.frame * 2}`}
+      role="img"
+      aria-label="Touch the field where the dart is, release to log it"
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setAim(at(e));
+      }}
+      onPointerMove={(e) => {
+        if (aim !== null || e.buttons) setAim(at(e));
+      }}
+      onPointerUp={(e) => {
+        const final = at(e);
+        setAim(null);
+        if (final) onPick(final.hit.segment);
+      }}
+      onPointerCancel={() => setAim(null)}
+    >
+      <circle className="db-frame" r={R.frame} />
+      {BOARD}
+      <circle className="db-ring-green" r={R.outerBull} />
+      <circle className="db-ring-red" r={R.bull} />
+      <circle className="db-wire" r={R.doubleOuter} />
+      {shape}
+      {aim && (
+        <g className="touch-aim" pointerEvents="none">
+          <circle cx={aim.x} cy={aim.y} r={6} className="touch-dot" />
+          <g transform={`translate(${bubbleX.toFixed(1)} ${bubbleY.toFixed(1)})`}>
+            <rect x={-56} y={-26} width={112} height={52} rx={14} className="touch-bubble" />
+            <text className="touch-label" dominantBaseline="central">
+              {label}
+            </text>
+          </g>
+        </g>
+      )}
+    </svg>
+  );
+}
+
+/** The aimed field, outlined. */
+function aimShape(hit: ReturnType<typeof segmentAt>) {
+  const [r1, r2] = hit.band;
+  if (hit.index === -1) {
+    return r1 === 0 ? (
+      <circle className="touch-field" r={r2} />
+    ) : (
+      <path
+        className="touch-field"
+        fillRule="evenodd"
+        d={`M${-r2} 0a${r2} ${r2} 0 1 0 ${2 * r2} 0a${r2} ${r2} 0 1 0 ${-2 * r2} 0ZM${-r1} 0a${r1} ${r1} 0 1 0 ${2 * r1} 0a${r1} ${r1} 0 1 0 ${-2 * r1} 0Z`}
+      />
+    );
+  }
+  if (hit.index === -2) {
+    return (
+      <path
+        className="touch-field miss"
+        fillRule="evenodd"
+        d={`M${-r2} 0a${r2} ${r2} 0 1 0 ${2 * r2} 0a${r2} ${r2} 0 1 0 ${-2 * r2} 0ZM${-r1} 0a${r1} ${r1} 0 1 0 ${2 * r1} 0a${r1} ${r1} 0 1 0 ${-2 * r1} 0Z`}
+      />
+    );
+  }
+  const from = hit.index * 18 - 9;
+  return <path className="touch-field" d={wedge(from, from + 18, r1, r2)} />;
 }

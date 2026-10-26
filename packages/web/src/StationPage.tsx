@@ -309,6 +309,7 @@ function Match({ match, send }: { match: MatchView; send: Send }) {
             darts={visit?.darts ?? []}
             coords={match.dartCoords ?? {}}
             highlight={boardTargets(match)}
+            onDart={setCorrecting}
           />
         </div>
         <div className="match-actions">
