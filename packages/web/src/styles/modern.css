@@ -1358,3 +1358,46 @@ select option:checked {
     transform: none;
   }
 }
+
+/* ---------- Sound on/off in the station bar ---------- */
+
+.station-bar .sound-toggle {
+  margin-left: auto;
+  min-height: 40px;
+  padding: 0 14px;
+  gap: 8px;
+  border-radius: 999px;
+}
+
+.sound-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sound-toggle .speaker {
+  fill: currentColor;
+}
+
+.sound-toggle.on {
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+
+.sound-toggle.on .waves {
+  stroke: var(--accent);
+}
+
+.sound-toggle.off {
+  color: var(--muted);
+}
+
+/* aria-pressed would paint it like a selected option; this is a switch with its own look. */
+.station-bar .sound-toggle[aria-pressed="true"] {
+  background: var(--glass);
+  box-shadow: none;
+}

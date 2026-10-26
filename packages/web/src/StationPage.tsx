@@ -27,6 +27,7 @@ import {
 } from "./MatchSetup.tsx";
 import { PixelIcon } from "./PixelIcon.tsx";
 import { SegmentPicker } from "./SegmentPicker.tsx";
+import { useMatchSounds, useSoundSetting } from "./sounds.ts";
 import { useStation } from "./useStation.ts";
 
 type Send = (command: StationCommand) => Promise<string | null>;
@@ -42,6 +43,8 @@ export function StationPage({ id }: { id: number }) {
   };
 
   const match = view?.match ?? null;
+  const sound = useSoundSetting();
+  useMatchSounds(match, sound.on);
   return (
     <main className="station">
       <header className="station-bar">
@@ -49,6 +52,7 @@ export function StationPage({ id }: { id: number }) {
           <Logo width="86px" className="wide-only" />
           <span className="station-name">{view?.name ?? `Station ${id}`}</span>
         </div>
+        <SoundToggle on={sound.on} onToggle={sound.toggle} />
         <BoardMenu
           stationId={id}
           online={view?.boardOnline ?? false}
@@ -75,6 +79,30 @@ export function StationPage({ id }: { id: number }) {
         )}
       </div>
     </main>
+  );
+}
+
+/** Sound on or off for this screen: a speaker, crossed out when off. */
+function SoundToggle({ on, onToggle }: { on: boolean; onToggle(): void }) {
+  return (
+    <button
+      type="button"
+      className={`sound-toggle ${on ? "on" : "off"}`}
+      aria-pressed={on}
+      aria-label={on ? "Sound on – tap to mute" : "Sound off – tap to turn on"}
+      title={on ? "Sound on" : "Sound off"}
+      onClick={onToggle}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path className="speaker" d="M4 9h4l5-4v14l-5-4H4z" />
+        {on ? (
+          <path className="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11" />
+        ) : (
+          <path className="waves" d="M16 9l5 6M21 9l-5 6" />
+        )}
+      </svg>
+      <span className="wide-only">{on ? "Sound" : "Muted"}</span>
+    </button>
   );
 }
 
