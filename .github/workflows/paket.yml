@@ -1,7 +1,7 @@
-name: Windows-Paket
+name: Pakete
 
-# Baut bei jedem Push auf "lokal" das fertige Paket (n4-darts-windows.zip) und haengt es an das
-# Release "neuester-stand". Download: Releases -> "Neuester Stand" -> n4-darts-windows.zip.
+# Baut bei jedem Push auf "lokal" die fertigen Pakete (n4-darts-windows.zip, n4-darts-linux.tar.gz)
+# und haengt sie an das Release "neuester-stand". Download: Releases -> "Neuester Stand".
 on:
   push:
     branches: [lokal]
@@ -43,7 +43,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           notes="Stand $(git rev-parse --short HEAD) vom $(date -u +'%d.%m.%Y %H:%M') UTC.
-          n4-darts-windows.zip herunterladen, entpacken, 'Darts starten.cmd' doppelklicken.
+
+          Windows: n4-darts-windows.zip herunterladen, entpacken, 'Darts starten.cmd' doppelklicken.
+          Linux: n4-darts-linux.tar.gz herunterladen, 'tar -xzf n4-darts-linux.tar.gz', dann './n4-darts/darts-starten.sh'.
+          Anleitung: ANLEITUNG.md im Repository oder anleitung.html im Paket.
           Beim Aktualisieren den Ordner 'data' behalten (Spieler und Stats)."
           git tag -f neuester-stand
           git push -f origin neuester-stand
@@ -52,4 +55,4 @@ jobs:
           else
             gh release create neuester-stand --title "Neuester Stand" --notes "$notes" --latest
           fi
-          gh release upload neuester-stand release/n4-darts-windows.zip --clobber
+          gh release upload neuester-stand release/n4-darts-windows.zip release/n4-darts-linux.tar.gz --clobber

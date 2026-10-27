@@ -12,9 +12,19 @@ See `docs/architecture.md` for the design and `docs/adr/` for the key decisions.
 | `packages/web`    | React app: `/station/n`, `/admin`, `/display`              |
 | `tools/board-sim` | Fake Autodarts Board Manager for development and tests     |
 
-## Windows (lokal, ohne Internet)
+## Anleitung
 
-**Fertiges Paket:** baut GitHub bei jedem Push auf `lokal` (Actions → „Windows-Paket“); herunterladen unter Releases → „Neuester Stand“ → `n4-darts-windows.zip`. Entpacken und `Darts starten.cmd` (echtes Board) oder `Darts Simulator.cmd` doppelklicken. Braucht nur Node.js 22+, kein `pnpm install`. Gespielt wird unter <http://localhost:3000/station/1>. Spieler, Spiele und Stats liegen im Ordner `data` daneben (lesbar: `data/spieler-stats.json`). Neu bauen: `node scripts/package.mjs`.
+**[ANLEITUNG.md](ANLEITUNG.md)** – Einrichten, Spielen, Turnierabend, FAQ (Windows und Linux).
+Als gestaltete Seite: [`docs/anleitung.html`](docs/anleitung.html), liegt auch in jedem Paket.
+
+## Windows und Linux (lokal, ohne Internet)
+
+**Fertige Pakete:** baut GitHub bei jedem Push auf `lokal` (Actions → „Pakete“); herunterladen unter [Releases → „Neuester Stand“](../../releases/tag/neuester-stand).
+
+- **Windows:** `n4-darts-windows.zip` entpacken und `Darts starten.cmd` (echtes Board) oder `Darts Simulator.cmd` doppelklicken.
+- **Linux:** `tar -xzf n4-darts-linux.tar.gz`, dann `n4-darts/darts-starten.sh` oder `n4-darts/darts-simulator.sh`. Fehlt Node.js, wird es ohne Root-Rechte in den Ordner geladen (x64/arm64). Autostart mit Kiosk-Browser: `./autostart.sh --kiosk`.
+
+ Braucht nur Node.js 22+, kein `pnpm install`. Gespielt wird unter <http://localhost:3000/station/1>. Spieler, Spiele und Stats liegen im Ordner `data` daneben (lesbar: `data/spieler-stats.json`). Beide Pakete neu bauen: `node scripts/package.mjs`.
 
 **Aus dem Quellcode** (zum Weiterentwickeln):
 

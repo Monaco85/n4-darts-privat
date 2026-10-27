@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>n4-darts – Anleitung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#08080a;-webkit-font-smoothing:antialiased}
+a{color:#e3242f}a:hover{color:#ff8a90}
+pre{white-space:pre-wrap;word-break:break-word}
+</style>
+</head>
+<body>
+<div style="background: radial-gradient(1100px 700px at 12% -6%, rgba(200,16,46,0.38) 0%, transparent 60%), radial-gradient(900px 700px at 100% 40%, rgba(200,16,46,0.16) 0%, transparent 55%), linear-gradient(160deg, #18181b 0%, #08080a 100%); color: #ffffff; font-family: 'Inter', system-ui, sans-serif; font-size: 18px; line-height: 1.55; min-height: 100vh">
+
+<header style="border-bottom: 1px solid rgba(255,255,255,0.14); background: rgba(8,8,10,0.6); backdrop-filter: blur(10px)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 18px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+<a href="#top" style="color: #ffffff; display: flex; align-items: center" aria-label="n4-darts Startseite">
+<svg viewBox="0 0 72 33" shape-rendering="crispEdges" style="width: 96px; height: auto" aria-hidden="true"><path fill="currentColor" d="M0 0h5v1h-5zM0 1h7v1h-7zM0 2h4v1h-4zM7 2h2v1h-2zM0 3h4v1h-4zM0 4h4v1h-4zM14 4h1v1h-1zM20 4h2v1h-2zM1 5h3v1h-3zM15 5h2v1h-2zM19 5h2v1h-2zM1 6h3v1h-3zM15 6h5v1h-5zM1 7h4v1h-4zM15 7h5v1h-5zM2 8h3v1h-3zM15 8h5v1h-5zM3 9h3v1h-3zM15 9h5v1h-5zM3 10h3v1h-3zM14 10h2v1h-2zM19 10h2v1h-2zM4 11h3v1h-3zM14 11h1v1h-1zM21 11h1v1h-1zM41 11h2v1h-2zM60 11h2v1h-2zM5 12h3v1h-3zM26 12h3v1h-3zM41 12h2v1h-2zM60 12h2v1h-2zM5 13h3v1h-3zM24 13h4v1h-4zM40 13h2v1h-2zM59 13h3v1h-3zM6 14h3v1h-3zM11 14h8v1h-8zM23 14h5v1h-5zM34 14h8v1h-8zM43 14h8v1h-8zM52 14h12v1h-12zM65 14h7v1h-7zM7 15h12v1h-12zM21 15h3v1h-3zM25 15h2v1h-2zM33 15h8v1h-8zM43 15h7v1h-7zM51 15h6v1h-6zM58 15h5v1h-5zM64 15h8v1h-8zM8 16h4v1h-4zM16 16h2v1h-2zM19 16h3v1h-3zM25 16h2v1h-2zM32 16h2v1h-2zM38 16h3v1h-3zM48 16h4v1h-4zM57 16h2v1h-2zM63 16h2v1h-2zM9 17h3v1h-3zM15 17h12v1h-12zM32 17h2v1h-2zM38 17h2v1h-2zM41 17h8v1h-8zM50 17h2v1h-2zM57 17h2v1h-2zM63 17h7v1h-7zM9 18h4v1h-4zM15 18h12v1h-12zM31 18h2v1h-2zM37 18h2v1h-2zM40 18h3v1h-3zM46 18h5v1h-5zM56 18h2v1h-2zM64 18h6v1h-6zM8 19h8v1h-8zM23 19h2v1h-2zM30 19h3v1h-3zM37 19h2v1h-2zM40 19h2v1h-2zM46 19h2v1h-2zM49 19h2v1h-2zM56 19h2v1h-2zM61 19h2v1h-2zM67 19h3v1h-3zM7 20h2v1h-2zM11 20h5v1h-5zM22 20h2v1h-2zM30 20h8v1h-8zM39 20h8v1h-8zM48 20h2v1h-2zM55 20h5v1h-5zM61 20h8v1h-8zM7 21h2v1h-2zM12 21h4v1h-4zM22 21h1v1h-1zM31 21h6v1h-6zM40 21h7v1h-7zM48 21h1v1h-1zM56 21h3v1h-3zM62 21h5v1h-5zM13 22h4v1h-4zM15 23h3v1h-3zM29 23h1v1h-1zM16 24h3v1h-3zM30 24h1v1h-1zM17 25h4v1h-4zM30 25h1v1h-1zM18 26h4v1h-4zM31 26h1v1h-1zM19 27h5v1h-5zM31 27h1v1h-1zM21 28h5v1h-5zM31 28h2v1h-2zM22 29h11v1h-11zM24 30h9v1h-9zM25 31h8v1h-8zM27 32h5v1h-5z"></path></svg>
+</a>
+<nav style="display: flex; flex-wrap: wrap; gap: 20px; font-family: 'Inter', system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; letter-spacing: 0.04em">
+<a href="#funktionen" style="color: #a9a9b0; text-decoration: none">Funktionen</a>
+<a href="#prinzip" style="color: #a9a9b0; text-decoration: none">So funktioniert's</a>
+<a href="#anleitung" style="color: #a9a9b0; text-decoration: none">Anleitung</a>
+<a href="#turnier" style="color: #a9a9b0; text-decoration: none">Turnier</a>
+<a href="#faq" style="color: #a9a9b0; text-decoration: none">FAQ</a>
+</nav>
+</div>
+</header>
+
+<section id="top" style="max-width: 1200px; margin: 0 auto; padding: 96px 24px 80px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: inline-flex; align-self: flex-start; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(61,220,132,0.10); border: 1px solid rgba(61,220,132,0.40); font-family: 'Inter', system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: #3ddc84">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #3ddc84; display: block"></span>
+100 % offline · kein Konto · kein Abo
+</div>
+<h1 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 800; letter-spacing: -0.03em; font-size: clamp(40px, 7vw, 88px); line-height: 1.02">Dein Darts-Abend.<br><span style="color: #ff5a62">Ohne Internet.</span></h1>
+<p style="margin: 0; max-width: 720px; font-size: 22px; color: #d4d4d8">Autodarts erkennt die Pfeile – n4-darts macht den Rest: X01, Cricket, Around the World und Elimination, allein oder mit bis zu 8 Spielern, Turniere, Beamer-Anzeige und Statistiken. Alles auf deinem eigenen Rechner im lokalen Netz. Stecker raus, weiterspielen.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; padding-top: 8px">
+<a href="#anleitung" style="display: inline-block; padding: 16px 30px; border-radius: 12px; background: linear-gradient(135deg, #e3242f 0%, #a30d1c 100%); box-shadow: 0 6px 24px rgba(227,36,47,0.35); color: #ffffff; font-family: 'Inter', system-ui, sans-serif; font-size: 17px; font-weight: 700; text-decoration: none">Zur Anleitung →</a>
+<a href="#prinzip" style="display: inline-block; padding: 15px 26px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); font-weight: 600; color: #ffffff; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; text-transform: uppercase; text-decoration: none">Wie geht das?</a>
+</div>
+
+<div style="margin-top: 40px; border: 1px solid rgba(255,255,255,0.14); border-radius: 18px; overflow: hidden; background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))">
+<div style="padding: 24px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 6px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 11px; color: #a9a9b0; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Spiel 501 · Double Out</div>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+<span style="font-family: 'Inter', system-ui, sans-serif; font-size: 20px; font-weight: 700">Sebastian</span>
+<span style="font-size: 72px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: #ff5a62">140</span>
+</div>
+<div style="display: flex; gap: 8px">
+<span style="padding: 4px 10px; border: 1px solid rgba(255,255,255,0.14); font-size: 17px; font-weight: 600; border-radius: 8px">T20</span>
+<span style="padding: 4px 10px; border: 1px solid rgba(255,255,255,0.14); font-size: 17px; font-weight: 600; border-radius: 8px">T20</span>
+<span style="padding: 4px 10px; border: 1px dashed rgba(255,255,255,0.14); font-size: 17px; border-radius: 8px; color: #a9a9b0">—</span>
+</div>
+</div>
+<div style="padding: 24px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 6px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 11px; color: #a9a9b0; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Checkout-Weg</div>
+<div style="font-size: 32px; font-weight: 700; line-height: 1.2">T20 · T16 · D16</div>
+<div style="color: #a9a9b0">Vorschlag erscheint automatisch</div>
+</div>
+<div style="padding: 24px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 11px; color: #a9a9b0; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Status</div>
+<div style="display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; background: rgba(61,220,132,0.10); border: 1px solid rgba(61,220,132,0.40); color: #3ddc84; font-family: 'Inter', system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600"><span style="width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; display: block"></span>Board online</div>
+<div style="display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; background: rgba(255,181,71,0.10); border: 1px solid rgba(255,181,71,0.40); color: #ffb547; font-family: 'Inter', system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600"><span style="width: 7px; height: 7px; border-radius: 50%; background: #ffb547; display: block"></span>Internet: egal</div>
+</div>
+</div>
+</section>
+
+<section id="funktionen" style="border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">01 · Funktionen</div>
+<h2 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 800; letter-spacing: -0.01em; font-size: clamp(28px, 4vw, 44px); line-height: 1.1">Alles, was ein Darts-Abend braucht</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Komplett offline</h3>
+<p style="margin: 0; color: #c4c4cc">Schriften, Icons, Skripte – alles wird mitgeliefert. Nichts lädt aus dem Netz, nichts muss in eine Cloud.</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Vier Spiele, auch solo</h3>
+<p style="margin: 0; color: #c4c4cc">X01 mit 301, 501 oder 701 (In: Single, Double, Master, Bull · Out: Single, Double, Master), Cricket, Around the World und Elimination. Allein zum Trainieren oder mit 2–8 Spielern, First to 1–5 Legs.</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Turniere auf Autopilot</h3>
+<p style="margin: 0; color: #c4c4cc">Gruppenphase, dann K.-o. (einfach oder doppelt). Der Server setzt das nächste Match automatisch an deine Scheibe.</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Beamer-Ansicht</h3>
+<p style="margin: 0; color: #c4c4cc">Live-Stände aller Stationen, Gruppentabellen, Turnierbaum und am Ende Sieger und Awards – füllt jeden Bildschirm.</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Statistiken für immer</h3>
+<p style="margin: 0; color: #c4c4cc">Rangliste, 3-Dart-Schnitt, Checkout-Quote, 180er, bestes Leg – dazu je Spiel Siege, Darts und Cricket-MPR. Alles lokal, lesbar in <span style="color: #ffffff">data\spieler-stats.json</span>.</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Korrigieren mit dem Finger</h3>
+<p style="margin: 0; color: #c4c4cc">Falschen Pfeil antippen, Finger auf die große Scheibe, aufs richtige Feld ziehen – eingetragen wird erst beim Loslassen. Daneben loslassen bricht ab. Fehlende Pfeile lassen sich nachtragen.</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Die Scheibe im Blick</h3>
+<p style="margin: 0; color: #c4c4cc">Jeder Pfeil erscheint nummeriert genau dort, wo Autodarts ihn gesehen hat. Bei Around the World leuchtet das nächste Ziel, bei Cricket die offenen Zahlen. Checkout-Wege stehen in den freien Wurf-Feldern.</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Sieg mit Show</h3>
+<p style="margin: 0; color: #c4c4cc">Game shot mit Konfetti in Rot, Weiß und Gold, Pokal und den Zahlen des Siegers: Average, Darts, Checkout – auch auf dem Beamer.</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 17px">Töne an oder aus</h3>
+<p style="margin: 0; color: #c4c4cc">Ein Ton pro Pfeil – Single, Double, Triple, Bull und Miss klingen verschieden –, ein Gong für den nächsten Spieler, Brummen beim Bust, Fanfare beim Sieg. Ein Knopf oben schaltet alles stumm.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section id="prinzip" style="border-top: 1px solid rgba(255,255,255,0.08)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">02 · Das Prinzip</div>
+<h2 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 800; letter-spacing: -0.01em; font-size: clamp(28px, 4vw, 44px); line-height: 1.1">Autodarts sieht. n4-darts zählt.</h2>
+<p style="margin: 0; color: #c4c4cc">Auf dem PC an der Scheibe läuft der Autodarts Board Manager 2.0.2 als reiner Pfeil-Detektor. n4-darts läuft daneben auf demselben PC, holt sich jeden Wurf über dessen lokale Schnittstelle (Port 3180) ab und kümmert sich um alles andere. Ausgelegt für genau einen Dartautomaten.</p>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 16px">
+<div style="flex: 1 1 260px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); padding: 24px; display: flex; flex-direction: column; gap: 12px; border-radius: 14px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 11px; color: #a9a9b0; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">An der Scheibe</div>
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 20px; font-weight: 700">Station</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 10px 12px; border-radius: 14px">Autodarts 3-Kamera-Set</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 10px 12px; border-radius: 14px">Windows-PC · Board Manager 2.0.2 <span style="color: #a9a9b0">:3180</span></div>
+<div style="border: 1px solid rgba(227,36,47,0.45); background: rgba(227,36,47,0.10); padding: 10px 12px; border-radius: 14px">Touchmonitor im Vollbild · <span style="color: #ff5a62">localhost:3000/station/1</span></div>
+</div>
+<div style="flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; padding: 0 4px; color: #ff5a62; font-family: 'Inter', system-ui, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">
+<svg width="48" height="16" viewBox="0 0 48 16" aria-hidden="true"><path d="M0 8h44M36 2l8 6-8 6" fill="none" stroke="currentColor" stroke-width="2"></path></svg>
+<span>Würfe</span>
+<svg width="48" height="16" viewBox="0 0 48 16" aria-hidden="true"><path d="M48 8H4M12 2L4 8l8 6" fill="none" stroke="currentColor" stroke-width="2"></path></svg>
+<span>Start/Stop</span>
+</div>
+<div style="flex: 1 1 260px; border: 1px solid #e3242f; background: rgba(227,36,47,0.10); padding: 24px; display: flex; flex-direction: column; gap: 12px; border-radius: 14px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 11px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Auf demselben PC</div>
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 20px; font-weight: 700">n4-darts Server</div>
+<div style="border: 1px solid rgba(227,36,47,0.45); padding: 10px 12px; border-radius: 14px">Spielregeln &amp; Korrekturen</div>
+<div style="border: 1px solid rgba(227,36,47,0.45); padding: 10px 12px; border-radius: 14px">Turnier-Planer &amp; Statistiken</div>
+<div style="border: 1px solid rgba(227,36,47,0.45); padding: 10px 12px; border-radius: 14px">Datenbank &amp; tägliche Backups</div>
+</div>
+<div style="flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; padding: 0 4px; color: #ff5a62; font-family: 'Inter', system-ui, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">
+<svg width="48" height="16" viewBox="0 0 48 16" aria-hidden="true"><path d="M0 8h44M36 2l8 6-8 6" fill="none" stroke="currentColor" stroke-width="2"></path></svg>
+<span>Live</span>
+</div>
+<div style="flex: 1 1 260px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); padding: 24px; display: flex; flex-direction: column; gap: 12px; border-radius: 14px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 11px; color: #a9a9b0; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Jeder Bildschirm im WLAN</div>
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 20px; font-weight: 700">Anzeigen</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 10px 12px; border-radius: 14px">Handy des Orga · <span style="color: #ff5a62">localhost:3000/admin</span></div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 10px 12px; border-radius: 14px">Beamer · <span style="color: #ff5a62">localhost:3000/display</span></div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 10px 12px; border-radius: 14px">Handys der Spieler · <span style="color: #ff5a62">localhost:3000/players</span></div>
+</div>
+</div>
+<p style="margin: 0; color: #a9a9b0">Kein Login, keine Konten: Jede Station ist einfach eine Adresse. Wer im selben Netz ist, öffnet die Seite im Browser.</p>
+</div>
+</section>
+
+<section id="anleitung" style="border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">03 · Anleitung</div>
+<h2 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 800; letter-spacing: -0.01em; font-size: clamp(28px, 4vw, 44px); line-height: 1.1">In 6 Schritten zum ersten Leg</h2>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px">
+
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 32px; display: flex; flex-wrap: wrap; gap: 24px">
+<div style="flex: 0 0 72px; font-family: 'Inter', system-ui, sans-serif; font-size: 40px; font-weight: 800; color: #ff5a62; line-height: 1">01</div>
+<div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 20px">Das brauchst du</h3>
+<ul style="margin: 0; padding-left: 22px; color: #d4d4d8; display: flex; flex-direction: column; gap: 4px">
+<li>Dartscheibe mit Autodarts-Kamera-Set (z. B. Winmau Autodarts) und Windows-Laptop mit dem Autodarts Board Manager in <b style="color: #ffffff">genau Version 2.0.2</b> – nicht aktualisieren</li>
+<li>Sonst nichts: n4-darts läuft auf demselben Windows-PC wie Autodarts</li>
+<li>Optional ein WLAN-Router, wenn Handys oder ein Beamer mitspielen sollen – Internet nicht nötig</li>
+<li>Optional: Beamer oder Fernseher, ein Handy für den Organisator</li>
+</ul>
+</div>
+</div>
+
+<div style="background: rgba(227,36,47,0.10); border: 1px solid rgba(227,36,47,0.55); border-radius: 14px; padding: 32px; display: flex; flex-wrap: wrap; gap: 24px">
+<div style="flex: 0 0 72px; font-family: 'Inter', system-ui, sans-serif; font-size: 40px; font-weight: 800; color: #ff5a62; line-height: 1">02</div>
+<div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; background: rgba(255,181,71,0.10); border: 1px solid rgba(255,181,71,0.40); color: #ffb547; font-family: 'Inter', system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600"><span style="width: 7px; height: 7px; border-radius: 50%; background: #ffb547; display: block"></span>Wichtig</div>
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 20px">Autodarts offline einrichten – ohne Login</h3>
+<p style="margin: 0; color: #d4d4d8">Normalerweise will der Board Manager beim ersten Start eine Anmeldung. Damit du dich nie einloggen musst und alles komplett offline läuft:</p>
+<ol style="margin: 0; padding-left: 22px; color: #d4d4d8; display: flex; flex-direction: column; gap: 6px">
+<li>Autodarts Board Manager <b style="color: #ffffff">2.0.2</b> auf dem Laptop installieren.</li>
+<li>Die <b style="color: #ffffff">zwei Config-Dateien</b> in den Autodarts-Ordner unter Roaming kopieren: <span style="color: #ff5a62">%APPDATA%\[AUTODARTS-ORDNER]</span> (Explorer-Adresszeile: %APPDATA% eingeben).</li>
+<li>In den Config-Dateien deine <b style="color: #ffffff">drei Kameras</b> eintragen.</li>
+<li>Board Manager starten – er läuft jetzt ohne Anmeldung und ohne Internet.</li>
+</ol>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<span style="padding: 4px 10px; border: 1px solid rgba(227,36,47,0.45); color: #ffffff">[CONFIG-DATEI 1]</span>
+<span style="padding: 4px 10px; border: 1px solid rgba(227,36,47,0.45); color: #ffffff">[CONFIG-DATEI 2]</span>
+</div>
+</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 32px; display: flex; flex-wrap: wrap; gap: 24px">
+<div style="flex: 0 0 72px; font-family: 'Inter', system-ui, sans-serif; font-size: 40px; font-weight: 800; color: #ff5a62; line-height: 1">03</div>
+<div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 20px">n4-darts herunterladen &amp; starten</h3>
+<ol style="margin: 0; padding-left: 22px; color: #d4d4d8; display: flex; flex-direction: column; gap: 6px">
+<li>Auf GitHub bei <b style="color: #ffffff">Monaco85</b> unter <b style="color: #ffffff">Releases</b> → „Neuester Stand“ die Datei <b style="color: #ffffff">n4-darts-windows.zip</b> herunterladen.</li>
+<li>Die ZIP entpacken, z. B. auf den Desktop.</li>
+<li><b style="color: #ffffff">Darts starten.cmd</b> doppelklicken. Fehlt Node.js, wird es automatisch installiert.</li>
+<li>Frage nach der Autodarts-Adresse: einfach <b style="color: #ffffff">Enter</b>, wenn Autodarts auf demselben PC läuft.</li>
+<li>Der Browser öffnet <a href="http://localhost:3000/station/1" style="color: #ff5a62">http://localhost:3000/station/1</a> – fertig. Im Fenster steht, ob Autodarts gefunden wurde.</li>
+</ol>
+<p style="margin: 0; color: #a9a9b0"><b style="color: #ffffff">Aktualisieren:</b> neue ZIP von „Neuester Stand“ über den alten Ordner entpacken und den Ordner <b style="color: #ffffff">data</b> behalten – darin liegen Spieler, Spiele und Statistiken. GitHub baut die ZIP bei jeder Änderung automatisch neu.</p>
+<p style="margin: 0; color: #a9a9b0"><b style="color: #ffffff">Unter Linux:</b> statt der ZIP <b style="color: #ffffff">n4-darts-linux.tar.gz</b> laden, mit <code>tar -xzf n4-darts-linux.tar.gz</code> entpacken und im Ordner <b style="color: #ffffff">./darts-starten.sh</b> ausführen (Simulator: <b style="color: #ffffff">./darts-simulator.sh</b>). Fehlt Node.js, lädt das Skript es einmalig in den Ordner – ohne Root-Rechte. <b style="color: #ffffff">./autostart.sh --kiosk</b> startet n4-darts und die Station im Vollbild bei jedem Einschalten.</p>
+</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 32px; display: flex; flex-wrap: wrap; gap: 24px">
+<div style="flex: 0 0 72px; font-family: 'Inter', system-ui, sans-serif; font-size: 40px; font-weight: 800; color: #ff5a62; line-height: 1">04</div>
+<div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 20px">Station im Vollbild</h3>
+<p style="margin: 0; color: #d4d4d8">Auf dem PC an der Scheibe ist die Seite <a href="http://localhost:3000/station/1" style="color: #ff5a62">http://localhost:3000/station/1</a> schon offen. Mit F11 auf Vollbild stellen. Oben zeigt eine Anzeige <span style="color: #3ddc84">„Board online"</span>. Über das ⋮-Menü daneben startest oder stoppst du die Erkennung, kalibrierst und setzt das Board zurück – ohne den Kiosk zu verlassen.</p>
+</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 32px; display: flex; flex-wrap: wrap; gap: 24px">
+<div style="flex: 0 0 72px; font-family: 'Inter', system-ui, sans-serif; font-size: 40px; font-weight: 800; color: #ff5a62; line-height: 1">05</div>
+<div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 20px">Spieler anlegen</h3>
+<p style="margin: 0; color: #d4d4d8">Im Browser <a href="http://localhost:3000/admin" style="color: #ff5a62">http://localhost:3000/admin</a> öffnen (ggf. PIN eingeben) und unter <b style="color: #ffffff">Players</b> Namen eintragen. Avatar antippen, um ein Foto mit der Kamera aufzunehmen und rund zuzuschneiden. Spieler lassen sich auch direkt an der Station hinzufügen.</p>
+</div>
+</div>
+
+<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 32px; display: flex; flex-wrap: wrap; gap: 24px">
+<div style="flex: 0 0 72px; font-family: 'Inter', system-ui, sans-serif; font-size: 40px; font-weight: 800; color: #ff5a62; line-height: 1">06</div>
+<div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 20px">Spielen</h3>
+<ol style="margin: 0; padding-left: 22px; color: #d4d4d8; display: flex; flex-direction: column; gap: 6px">
+<li>An der Station 1 bis 8 Spieler antippen – auch alleine zum Trainieren. Die Reihenfolge der Taps ist die Wurfreihenfolge.</li>
+<li>Unter <b style="color: #ffffff">Game</b> das Spiel wählen: X01, Cricket, Around the World oder Elimination. Bei X01 Startpunkte (301/501/701), In- und Out-Regel, dazu die Legs. Dann <b style="color: #ffffff">Start</b>.</li>
+<li>Werfen. Jeder Pfeil erscheint sofort auf der Scheibe im Bildschirm, inklusive Checkout-Vorschlag.</li>
+<li><b style="color: #ffffff">Pfeile ziehen</b> beendet die Aufnahme – erst dann ist der nächste Spieler dran.</li>
+<li>Pfeil falsch erkannt? Antippen (in der Wurf-Leiste oder direkt auf der Scheibe), Finger aufs richtige Feld ziehen und loslassen.</li>
+<li>Ton an oder aus: Lautsprecher-Knopf oben rechts. Beim Checkout gibt es Konfetti – mit <b style="color: #ffffff">Done</b> geht es zum nächsten Spiel.</li>
+</ol>
+</div>
+</div>
+
+</div>
+</div>
+</section>
+
+<section id="turnier" style="border-top: 1px solid rgba(255,255,255,0.08)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">04 · Turnierabend</div>
+<h2 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 800; letter-spacing: -0.01em; font-size: clamp(28px, 4vw, 44px); line-height: 1.1">Einrichten, starten, zurücklehnen</h2>
+<p style="margin: 0; color: #c4c4cc">Alles läuft über <a href="http://localhost:3000/admin" style="color: #ff5a62">http://localhost:3000/admin</a> → Tournament, bequem vom Handy aus.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px">
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 10px; border-radius: 14px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 12px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Aufsetzen</div>
+<p style="margin: 0; color: #d4d4d8">Spieler wählen, <b style="color: #ffffff">Create draft</b>. Format, Legs pro Phase und Spiel einstellen. Setzliste nach Schnitt, geschätzte Dauer inklusive.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 10px; border-radius: 14px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 12px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Starten</div>
+<p style="margin: 0; color: #d4d4d8">Ab jetzt führt der Server durch den Abend: nächstes Match direkt an die Scheibe, K.-o.-Baum nach der Gruppenphase, Sieger rücken auf.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 10px; border-radius: 14px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 12px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Eingreifen</div>
+<p style="margin: 0; color: #d4d4d8">Station pausieren, Match zurückhalten oder vorziehen, Spieler abmelden, Nachzügler aufnehmen, Würfe im Verlauf korrigieren.</p>
+</div>
+<div style="border: 1px solid #e3242f; background: rgba(227,36,47,0.10); padding: 24px; display: flex; flex-direction: column; gap: 10px; border-radius: 14px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 12px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">Siegerehrung</div>
+<p style="margin: 0; color: #d4d4d8">Champion, Platzierungen und Awards: bester Match-Schnitt, höchstes Finish, meiste 180er, bestes Leg.</p>
+</div>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); padding: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; border-radius: 14px">
+<span style="font-family: 'Inter', system-ui, sans-serif; font-size: 15px; font-weight: 700">Beamer-Tipp</span>
+<span style="flex: 999 1 400px; color: #d4d4d8"><a href="http://localhost:3000/display" style="color: #ff5a62">http://localhost:3000/display</a> im Browser für den Beamer öffnen, F11, fertig. Die Seite folgt dem Abend von selbst. Eine Station groß zeigen: <a href="http://localhost:3000/watch/1" style="color: #ff5a62">http://localhost:3000/watch/1</a>.</span>
+</div>
+</div>
+</section>
+
+<section style="border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">05 · Alle Seiten</div>
+<h2 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 800; letter-spacing: -0.01em; font-size: clamp(28px, 4vw, 44px); line-height: 1.1">Wo was läuft</h2>
+</div>
+<div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.14); border-radius: 14px">
+<table style="width: 100%; min-width: 680px; border-collapse: collapse; font-size: 17px; font-weight: 600; border-radius: 8px">
+<thead>
+<tr style="background: rgba(255,255,255,0.06); font-family: 'Inter', system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: #a9a9b0">
+<th style="text-align: left; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.14)">Adresse</th>
+<th style="text-align: left; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.14)">Gerät</th>
+<th style="text-align: left; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.14)">Wofür</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #ff5a62"><a href="http://localhost:3000/station/1" style="color: #ff5a62">http://localhost:3000/station/1</a></td><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08)">Touchmonitor an der Scheibe</td><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #d4d4d8">Match starten, Punktestand, Pfeile korrigieren</td></tr>
+<tr><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #ff5a62"><a href="http://localhost:3000/admin" style="color: #ff5a62">http://localhost:3000/admin</a></td><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08)">Handy des Organisators</td><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #d4d4d8">Turnier, Spieler, Verlauf, Board-Adresse</td></tr>
+<tr><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #ff5a62"><a href="http://localhost:3000/display" style="color: #ff5a62">http://localhost:3000/display</a></td><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08)">Beamer</td><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #d4d4d8">Live-Stände, Tabellen, Turnierbaum, Rangliste</td></tr>
+<tr><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #ff5a62"><a href="http://localhost:3000/watch/1" style="color: #ff5a62">http://localhost:3000/watch/1</a></td><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08)">Beamer / TV</td><td style="padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #d4d4d8">Eine Station groß, nur zum Zuschauen</td></tr>
+<tr><td style="padding: 12px 20px; color: #ff5a62"><a href="http://localhost:3000/players" style="color: #ff5a62">http://localhost:3000/players</a></td><td style="padding: 12px 20px">Handys der Spieler</td><td style="padding: 12px 20px; color: #d4d4d8">Rangliste und persönliche Statistiken</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<section id="faq" style="border-top: 1px solid rgba(255,255,255,0.08)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 88px 24px; display: flex; flex-direction: column; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: #ff5a62; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600">06 · Gut zu wissen</div>
+<h2 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 800; letter-spacing: -0.01em; font-size: clamp(28px, 4vw, 44px); line-height: 1.1">FAQ</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px">
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Was passiert, wenn das Internet weg ist?</h3>
+<p style="margin: 0; color: #d4d4d8">Nichts. Erkennung und n4-darts laufen komplett im lokalen Netz weiter.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Board Manager aktualisieren?</h3>
+<p style="margin: 0; color: #d4d4d8">Nein – bleib bei 2.0.2. Darauf sind der Offline-Betrieb ohne Login und die Schnittstelle zu n4-darts abgestimmt. Ein Update kann beides kaputt machen.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Sind meine Statistiken sicher?</h3>
+<p style="margin: 0; color: #d4d4d8">Alles liegt im Ordner <b style="color: #ffffff">data</b> neben den Start-Dateien: die Datenbank, täglich ein Backup (die letzten 30 bleiben) und <b style="color: #ffffff">spieler-stats.json</b> zum Nachlesen. Ab und zu den Ordner auf einen anderen Datenträger kopieren.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Kann ich das ins Internet stellen?</h3>
+<p style="margin: 0; color: #d4d4d8">Besser nicht. Außer der Admin-PIN gibt es keinen Login – n4-darts gehört ins Heimnetz.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Was zählt für die Statistik?</h3>
+<p style="margin: 0; color: #d4d4d8">Jedes fertig gespielte Match – ob Turnier oder spontan. Kampflose Siege und abgebrochene Spiele nicht.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Testen ohne echte Scheibe?</h3>
+<p style="margin: 0; color: #d4d4d8"><b style="color: #ffffff">Darts Simulator.cmd</b> (Linux: <b style="color: #ffffff">./darts-simulator.sh</b>) starten: Dann gibt es eine simulierte Scheibe zum Anklicken unter <a href="http://localhost:3180/" style="color: #ff5a62">http://localhost:3180/</a>.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Kein Ton zu hören?</h3>
+<p style="margin: 0; color: #d4d4d8">Browser spielen Töne erst nach dem ersten Antippen der Seite – am Touchmonitor passiert das beim Einrichten ohnehin. Sonst prüfen, ob oben „Sound“ steht und nicht „Muted“.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Was heißt Elimination?</h3>
+<p style="margin: 0; color: #d4d4d8">Alle zählen von 0 hoch bis genau 301 (oder 501). Wer drüber wirft, hat einen Bust. Wer genau auf dem Stand eines Gegners landet, schickt ihn zurück auf 0.</p>
+</div>
+<div style="border: 1px solid rgba(255,255,255,0.14); padding: 24px; display: flex; flex-direction: column; gap: 8px; border-radius: 14px">
+<h3 style="margin: 0; font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 15px">Mehrere Scheiben?</h3>
+<p style="margin: 0; color: #d4d4d8">Diese Version ist bewusst auf einen Dartautomaten eingestellt. Turniere laufen dann nacheinander an derselben Scheibe.</p>
+</div>
+</div>
+</div>
+</section>
+
+<footer style="border-top: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.02)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 48px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px">
+<div style="font-family: 'Inter', system-ui, sans-serif; font-size: 24px; font-weight: 800">Game on. <span style="color: #ff5a62">Offline.</span></div>
+<div style="color: #a9a9b0">n4-darts · Pfeil-Erkennung durch Autodarts · Kein offizielles Autodarts-Produkt</div>
+</div>
+</footer>
+
+</div>
+</body>
+</html>
