@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# n4-darts beim Einschalten automatisch starten (Linux, ohne Root-Rechte).
+# Offline Darts beim Einschalten automatisch starten (Linux, ohne Root-Rechte).
 #   ./autostart.sh                  einrichten (fragt nach der Autodarts-Adresse)
 #   ./autostart.sh --kiosk          zusaetzlich den Browser im Vollbild auf der Station oeffnen
 #   ./autostart.sh --entfernen      Autostart wieder abschalten
@@ -7,11 +7,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UNIT_DIR="$HOME/.config/systemd/user"
-UNIT="$UNIT_DIR/n4-darts.service"
-DESKTOP="$HOME/.config/autostart/n4-darts-kiosk.desktop"
+UNIT="$UNIT_DIR/offline-darts.service"
+DESKTOP="$HOME/.config/autostart/offline-darts-kiosk.desktop"
 
 if [ "${1:-}" = "--entfernen" ]; then
-  systemctl --user disable --now n4-darts.service 2>/dev/null || true
+  systemctl --user disable --now offline-darts.service 2>/dev/null || true
   rm -f "$UNIT" "$DESKTOP"
   systemctl --user daemon-reload || true
   echo "Autostart entfernt."
@@ -28,7 +28,7 @@ BOARD="${BOARD:-http://localhost:3180}"
 mkdir -p "$UNIT_DIR"
 cat > "$UNIT" <<EOF
 [Unit]
-Description=n4-darts (lokal Darts spielen)
+Description=Offline Darts (lokal Darts spielen)
 After=network.target
 
 [Service]
@@ -41,10 +41,10 @@ WantedBy=default.target
 EOF
 
 systemctl --user daemon-reload
-systemctl --user enable --now n4-darts.service
+systemctl --user enable --now offline-darts.service
 # Auch ohne Anmeldung starten, sobald der Rechner laeuft (wenn erlaubt).
 loginctl enable-linger "$USER" 2>/dev/null || true
-echo "n4-darts startet jetzt bei jedem Einschalten. Status: systemctl --user status n4-darts"
+echo "Offline Darts startet jetzt bei jedem Einschalten. Status: systemctl --user status offline-darts"
 
 if [ "$KIOSK" = 1 ]; then
   browser=""
@@ -63,7 +63,7 @@ if [ "$KIOSK" = 1 ]; then
   cat > "$DESKTOP" <<EOF
 [Desktop Entry]
 Type=Application
-Name=n4-darts Station
+Name=Offline Darts Station
 Exec=sh -c "sleep 8; $cmd"
 X-GNOME-Autostart-enabled=true
 EOF

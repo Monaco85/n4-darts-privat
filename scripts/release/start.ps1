@@ -1,4 +1,4 @@
-# n4-darts (Paket): startet den Server und, wenn gewuenscht, das simulierte Board.
+# Offline Darts (Paket): startet den Server und, wenn gewuenscht, das simulierte Board.
 # Wird von "Darts starten.cmd" (echtes Board) und "Darts Simulator.cmd" (-Simulator) aufgerufen.
 # Braucht nur Node.js 22 oder neuer; alles andere liegt im Paket.
 param([switch]$Simulator)
@@ -6,13 +6,20 @@ param([switch]$Simulator)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 Set-Location $root
-try { Start-Transcript -Path (Join-Path $root 'n4-start.log') -Force | Out-Null } catch {}
+try { Start-Transcript -Path (Join-Path $root 'start.log') -Force | Out-Null } catch {}
 
 function Refresh-Path {
   $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' +
     [Environment]::GetEnvironmentVariable('Path', 'User')
 }
 function Step($text) { Write-Host ''; Write-Host "==> $text" -ForegroundColor Red }
+
+# Frueher hiess der Ordner "n4-darts": beim ersten Start dessen Daten (Spieler, Stats) uebernehmen.
+$old = Join-Path (Split-Path $root -Parent) 'n4-darts\data'
+if (-not (Test-Path (Join-Path $root 'data')) -and (Test-Path $old)) {
+  Write-Host "Uebernehme Spieler und Statistiken aus $old"
+  Copy-Item $old (Join-Path $root 'data') -Recurse
+}
 
 $procs = @()
 try {
@@ -56,7 +63,7 @@ try {
     $procs += Start-Process -FilePath 'node' -ArgumentList '"sim.mjs" --boards 1' -WorkingDirectory $root -NoNewWindow -PassThru
   }
 
-  Step "Starte n4-darts fuer das Board unter $board"
+  Step "Starte Offline Darts fuer das Board unter $board"
   $procs += Start-Process -FilePath 'node' -ArgumentList '"server.mjs"' -WorkingDirectory $root -NoNewWindow -PassThru
 
   # Warten, bis der Server antwortet, dann Station 1 auf das Board stellen und den Browser oeffnen.
@@ -76,7 +83,7 @@ try {
 
   Write-Host ''
   Write-Host '================================================' -ForegroundColor Red
-  Write-Host ' n4-darts laeuft!' -ForegroundColor White
+  Write-Host ' Offline Darts laeuft!' -ForegroundColor White
   Write-Host '  Spielen : http://localhost:3000/station/1'
   if ($Simulator) { Write-Host '  Fake-Board: http://localhost:3180/' }
   elseif ($version) { Write-Host "  Autodarts Board Manager gefunden, Version $version" -ForegroundColor Green }

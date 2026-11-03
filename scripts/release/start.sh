@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# n4-darts (Linux-Paket): startet den Server und, wenn gewuenscht, das simulierte Board.
+# Offline Darts (Linux-Paket): startet den Server und, wenn gewuenscht, das simulierte Board.
 #   ./darts-starten.sh      mit dem echten Autodarts-Board (fragt nach der Adresse)
 #   ./darts-simulator.sh    mit einem Board zum Anklicken
 # Optionen: --simulator, --board <adresse>, --no-browser
@@ -64,6 +64,12 @@ case "$BOARD" in http://*|https://*) ;; *) BOARD="http://$BOARD" ;; esac
 BOARD="${BOARD%/}"
 if ! printf '%s' "$BOARD" | grep -Eq ':[0-9]+$'; then BOARD="$BOARD:3180"; fi
 
+# Frueher hiess der Ordner "n4-darts": beim ersten Start dessen Daten (Spieler, Stats) uebernehmen.
+if [ ! -d "$ROOT/data" ] && [ -d "$ROOT/../n4-darts/data" ]; then
+  echo "Uebernehme Spieler und Statistiken aus $(cd "$ROOT/../n4-darts/data" && pwd)"
+  cp -a "$ROOT/../n4-darts/data" "$ROOT/data"
+fi
+
 export DATA_DIR="$ROOT/data" WEB_DIR="$ROOT/web" STATIONS="1=$BOARD" MAX_STATIONS=1 PORT=3000
 
 PIDS=()
@@ -79,7 +85,7 @@ if [ "$SIMULATOR" = 1 ]; then
   PIDS+=("$!")
 fi
 
-step "Starte n4-darts fuer das Board unter $BOARD"
+step "Starte Offline Darts fuer das Board unter $BOARD"
 "$NODE" "$ROOT/server.mjs" &
 PIDS+=("$!")
 
@@ -104,7 +110,7 @@ version="$("$NODE" -e '
 
 echo
 echo "${RED}================================================${RESET}"
-echo "${BOLD} n4-darts laeuft!${RESET}"
+echo "${BOLD} Offline Darts laeuft!${RESET}"
 echo "  Spielen : http://localhost:3000/station/1"
 if [ "$SIMULATOR" = 1 ]; then
   echo "  Fake-Board: http://localhost:3180/"

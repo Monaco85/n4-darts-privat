@@ -1,6 +1,6 @@
 name: Pakete
 
-# Baut bei jedem Push auf "lokal" die fertigen Pakete (n4-darts-windows.zip, n4-darts-linux.tar.gz)
+# Baut bei jedem Push auf "lokal" die fertigen Pakete (offline-darts-windows.zip, offline-darts-linux.tar.gz)
 # und haengt sie an das Release "neuester-stand". Download: Releases -> "Neuester Stand".
 on:
   push:
@@ -44,8 +44,8 @@ jobs:
         run: |
           notes="Stand $(git rev-parse --short HEAD) vom $(date -u +'%d.%m.%Y %H:%M') UTC.
 
-          Windows: n4-darts-windows.zip herunterladen, entpacken, 'Darts starten.cmd' doppelklicken.
-          Linux: n4-darts-linux.tar.gz herunterladen, 'tar -xzf n4-darts-linux.tar.gz', dann './n4-darts/darts-starten.sh'.
+          Windows: offline-darts-windows.zip herunterladen, entpacken, 'Darts starten.cmd' doppelklicken.
+          Linux: offline-darts-linux.tar.gz herunterladen, 'tar -xzf offline-darts-linux.tar.gz', dann './offline-darts/darts-starten.sh'.
           Anleitung: ANLEITUNG.md im Repository oder anleitung.html im Paket.
           Beim Aktualisieren den Ordner 'data' behalten (Spieler und Stats)."
           git tag -f neuester-stand
@@ -55,4 +55,8 @@ jobs:
           else
             gh release create neuester-stand --title "Neuester Stand" --notes "$notes" --latest
           fi
-          gh release upload neuester-stand release/n4-darts-windows.zip release/n4-darts-linux.tar.gz --clobber
+          # Alte Dateinamen (vor der Umbenennung) entfernen.
+          for old in n4-darts-windows.zip n4-darts-linux.tar.gz; do
+            gh release delete-asset neuester-stand "$old" -y 2>/dev/null || true
+          done
+          gh release upload neuester-stand release/offline-darts-windows.zip release/offline-darts-linux.tar.gz --clobber

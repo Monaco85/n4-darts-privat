@@ -1,4 +1,4 @@
-// Baut die fertigen Pakete: release/n4-darts-windows.zip und release/n4-darts-linux.tar.gz.
+// Baut die fertigen Pakete: release/offline-darts-windows.zip und release/offline-darts-linux.tar.gz.
 // Darin: server.mjs und sim.mjs (je eine Datei, ohne node_modules), die gebaute Oberflaeche,
 // die Start-Dateien, die Anleitung und eine Kurzanleitung. Auf dem PC braucht es nur Node.js 22+.
 // Aufruf aus dem n4-darts-Ordner nach `pnpm install`: node scripts/package.mjs
@@ -7,7 +7,7 @@ import { chmodSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } fro
 import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
-const out = join(root, "release", "n4-darts");
+const out = join(root, "release", "offline-darts");
 const run = (cmd, args, opts = {}) =>
   execFileSync(cmd, args, { cwd: root, stdio: "inherit", shell: process.platform === "win32", ...opts });
 
@@ -43,11 +43,12 @@ for (const [entry, file] of [
 
 // Gemeinsam fuer beide Pakete; Linux bekommt danach eine Kopie ohne die Windows-Dateien.
 cpSync(join(root, "docs", "anleitung.html"), join(out, "anleitung.html"));
-cpSync(join(root, "packages", "web", "dist"), join(root, "release", "linux", "n4-darts", "web"), {
+cpSync(join(root, "docs", "bilder"), join(out, "bilder"), { recursive: true });
+cpSync(join(root, "packages", "web", "dist"), join(root, "release", "linux", "offline-darts", "web"), {
   recursive: true,
 });
-for (const file of ["server.mjs", "sim.mjs", "anleitung.html"])
-  cpSync(join(out, file), join(root, "release", "linux", "n4-darts", file));
+for (const file of ["server.mjs", "sim.mjs", "anleitung.html", "bilder"])
+  cpSync(join(out, file), join(root, "release", "linux", "offline-darts", file), { recursive: true });
 
 console.log("== Start-Dateien (Windows)");
 const crlf = (text) => text.replace(/\r?\n/g, "\r\n");
@@ -63,12 +64,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0start.ps1" ${args}
 echo.
 pause
 `);
-writeFileSync(join(out, "Darts starten.cmd"), cmd("n4-darts", ""));
-writeFileSync(join(out, "Darts Simulator.cmd"), cmd("n4-darts - Simulator", "-Simulator"));
+writeFileSync(join(out, "Darts starten.cmd"), cmd("Offline Darts", ""));
+writeFileSync(join(out, "Darts Simulator.cmd"), cmd("Offline Darts - Simulator", "-Simulator"));
 const commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root }).toString().trim();
 writeFileSync(
   join(out, "LIESMICH.txt"),
-  crlf(`n4-darts - lokal Darts spielen, ohne Internet (Stand ${commit})
+  crlf(`Offline Darts - lokal Darts spielen, ohne Internet (Stand ${commit})
 
 Ausfuehrliche Anleitung: anleitung.html (im Browser oeffnen)
 
@@ -80,7 +81,7 @@ Danach im Browser: http://localhost:3000/station/1
 Beenden: das schwarze Fenster schliessen.
 
 Spiele: X01 (301/501/701), Cricket, Around the World, Elimination - allein oder mit 2-8 Spielern.
-Daten: Spieler, Spiele und Statistiken liegen im Ordner "data" (n4-darts.db);
+Daten: Spieler, Spiele und Statistiken liegen im Ordner "data" (Datenbank);
        die Statistik je Spieler und Spiel zusaetzlich lesbar in data\\spieler-stats.json.
        Beim Aktualisieren den Ordner "data" behalten!
 Voraussetzung: Node.js 22 oder neuer (wird beim ersten Start bei Bedarf installiert).
@@ -88,7 +89,7 @@ Voraussetzung: Node.js 22 oder neuer (wird beim ersten Start bei Bedarf installi
 );
 
 console.log("== Start-Dateien (Linux)");
-const linux = join(root, "release", "linux", "n4-darts");
+const linux = join(root, "release", "linux", "offline-darts");
 const lf = (text) => text.replace(/\r\n/g, "\n");
 const script = (name, text) => {
   writeFileSync(join(linux, name), lf(text));
@@ -103,7 +104,7 @@ script("darts-starten.sh", wrapper(""));
 script("darts-simulator.sh", wrapper("--simulator "));
 writeFileSync(
   join(linux, "LIESMICH.txt"),
-  `n4-darts - lokal Darts spielen, ohne Internet (Stand ${commit}, Linux)
+  `Offline Darts - lokal Darts spielen, ohne Internet (Stand ${commit}, Linux)
 
 Ausfuehrliche Anleitung: anleitung.html (im Browser oeffnen)
 
@@ -119,7 +120,7 @@ Autostart beim Einschalten:  ./autostart.sh   (mit --kiosk: Station im Vollbild 
 Autostart abschalten:        ./autostart.sh --entfernen
 
 Spiele: X01 (301/501/701), Cricket, Around the World, Elimination - allein oder mit 2-8 Spielern.
-Daten: Spieler, Spiele und Statistiken liegen im Ordner "data" (n4-darts.db);
+Daten: Spieler, Spiele und Statistiken liegen im Ordner "data" (Datenbank);
        die Statistik je Spieler und Spiel zusaetzlich lesbar in data/spieler-stats.json.
        Beim Aktualisieren den Ordner "data" behalten!
 Voraussetzung: Node.js 22 oder neuer. Fehlt es, laedt start.sh es einmalig in den Ordner "node"
@@ -128,10 +129,10 @@ Voraussetzung: Node.js 22 oder neuer. Fehlt es, laedt start.sh es einmalig in de
 );
 
 console.log("== Pakete packen");
-const zip = join(root, "release", "n4-darts-windows.zip");
-run("zip", ["-qr", zip, "n4-darts"], { cwd: join(root, "release"), shell: false });
-const tgz = join(root, "release", "n4-darts-linux.tar.gz");
-run("tar", ["-czf", tgz, "--owner=0", "--group=0", "n4-darts"], {
+const zip = join(root, "release", "offline-darts-windows.zip");
+run("zip", ["-qr", zip, "offline-darts"], { cwd: join(root, "release"), shell: false });
+const tgz = join(root, "release", "offline-darts-linux.tar.gz");
+run("tar", ["-czf", tgz, "--owner=0", "--group=0", "offline-darts"], {
   cwd: join(root, "release", "linux"),
   shell: false,
 });

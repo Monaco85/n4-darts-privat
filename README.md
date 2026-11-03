@@ -1,4 +1,4 @@
-# n4-darts
+# Offline Darts
 offline dart platform using Autodarts scoring capabilities
 
 See `docs/architecture.md` for the design and `docs/adr/` for the key decisions.
@@ -21,8 +21,8 @@ Als gestaltete Seite: [`docs/anleitung.html`](docs/anleitung.html), liegt auch i
 
 **Fertige Pakete:** baut GitHub bei jedem Push auf `lokal` (Actions → „Pakete“); herunterladen unter [Releases → „Neuester Stand“](../../releases/tag/neuester-stand).
 
-- **Windows:** `n4-darts-windows.zip` entpacken und `Darts starten.cmd` (echtes Board) oder `Darts Simulator.cmd` doppelklicken.
-- **Linux:** `tar -xzf n4-darts-linux.tar.gz`, dann `n4-darts/darts-starten.sh` oder `n4-darts/darts-simulator.sh`. Fehlt Node.js, wird es ohne Root-Rechte in den Ordner geladen (x64/arm64). Autostart mit Kiosk-Browser: `./autostart.sh --kiosk`.
+- **Windows:** `offline-darts-windows.zip` entpacken und `Darts starten.cmd` (echtes Board) oder `Darts Simulator.cmd` doppelklicken.
+- **Linux:** `tar -xzf offline-darts-linux.tar.gz`, dann `offline-darts/darts-starten.sh` oder `offline-darts/darts-simulator.sh`. Fehlt Node.js, wird es ohne Root-Rechte in den Ordner geladen (x64/arm64). Autostart mit Kiosk-Browser: `./autostart.sh --kiosk`.
 
  Braucht nur Node.js 22+, kein `pnpm install`. Gespielt wird unter <http://localhost:3000/station/1>. Spieler, Spiele und Stats liegen im Ordner `data` daneben (lesbar: `data/spieler-stats.json`). Beide Pakete neu bauen: `node scripts/package.mjs`.
 
