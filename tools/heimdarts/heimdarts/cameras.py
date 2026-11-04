@@ -35,8 +35,9 @@ class FrameSource:
 class OpenCVSource(FrameSource):
     """Liest Bilder in einem eigenen Thread; read() liefert immer das neueste.
 
-    Die Bildrate (fps) wird bei der Kamera angefragt. Liefert sie trotzdem mehr, werden die
-    überzähligen Bilder nur abgeholt (grab), aber nicht umgewandelt – das spart Rechenzeit.
+    Die Bildrate (fps) wird bei der Kamera angefragt, die meisten USB-Kameras ignorieren das aber.
+    Der Thread schläft deshalb zwischen zwei fälligen Bildern und holt nur so viele ab und wandelt
+    sie um, wie eingestellt sind.
     """
 
     def __init__(self, spec: str, width: int = 1280, height: int = 720, fps: float = 15.0):
@@ -94,6 +95,13 @@ class OpenCVSource(FrameSource):
                 if self._fps_changed and not is_file:
                     self._fps_changed = False
                     cap.set(cv2.CAP_PROP_FPS, self.fps)
+                if not is_file:
+                    # DirectShow wartet bei grab() nicht auf ein neues Bild, sondern liefert sofort das
+                    # letzte. Ohne Pause dreht der Thread leer und belegt einen ganzen CPU-Kern. Also bis
+                    # zum nächsten fälligen Bild schlafen und dann nur dieses eine abholen.
+                    wait = next_due - time.time()
+                    if wait > 0 and self._stop.wait(wait):
+                        break
                 if not cap.grab():
                     if is_file:
                         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -107,8 +115,6 @@ class OpenCVSource(FrameSource):
                 fails = 0
                 now = time.time()
                 period = 1.0 / max(1.0, self.fps)
-                if now < next_due - 0.3 * period and not is_file:
-                    continue                      # Bild verwerfen, ohne es umzuwandeln
                 # Takt halten (kleines Zittern der Kamera ausgleichen), nach Hängern neu ansetzen
                 next_due = next_due + period if now - next_due < period else now + period
                 ok, frame = cap.retrieve()

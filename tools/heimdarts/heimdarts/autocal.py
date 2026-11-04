@@ -69,7 +69,22 @@ def set_twenty(cal: Calibration, x: float, y: float) -> Calibration:
 
 
 # ---------------------------------------------------------------------------------- Farben
+def _lab_masks(frame: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None:
+    """Rot/Grün über den a*-Kanal (Lab): robuster als Sättigung bei blassen Farben echter Kameras."""
+    lab = cv2.cvtColor(cv2.GaussianBlur(frame, (3, 3), 0), cv2.COLOR_BGR2LAB).astype(np.int16)
+    L, a, b = lab[..., 0], lab[..., 1] - 128, lab[..., 2] - 128
+    red = (a >= 22) & (L > 45) & (b > -5)
+    green = (a <= -14) & (L > 45)
+    n = L.size
+    if red.sum() > 0.003 * n and green.sum() > 0.003 * n:
+        return red.astype(np.uint8), green.astype(np.uint8)
+    return None
+
+
 def color_masks(frame: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    lab = _lab_masks(frame)
+    if lab is not None:
+        return lab
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     h, s, v = cv2.split(hsv)
     n = h.size
