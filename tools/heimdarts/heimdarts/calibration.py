@@ -100,7 +100,16 @@ def draw_overlay(frame: np.ndarray, cal: Calibration, color=(0, 255, 255)) -> np
                         [B.R_DOUBLE_OUT * math.cos(a), B.R_DOUBLE_OUT * math.sin(a)]])
         ip = cal.board_to_image(seg).astype(np.int32)
         cv2.line(out, tuple(ip[0]), tuple(ip[1]), color, 1, cv2.LINE_AA)
-    # Zahl 20 zur Orientierung
+    # Zahl 20 zur Orientierung, gut sichtbar und das Feld der 20 hervorgehoben
+    scale = max(0.6, out.shape[1] / 1280 * 1.1)
     p20 = cal.board_to_image([(0, (B.R_DOUBLE_OUT + B.R_BOARD) / 2)])[0]
-    cv2.putText(out, "20", (int(p20[0]) - 10, int(p20[1]) + 6), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
+    (tw, th), _ = cv2.getTextSize("20", cv2.FONT_HERSHEY_SIMPLEX, scale, 2)
+    org = (int(p20[0] - tw / 2), int(p20[1] + th / 2))
+    cv2.putText(out, "20", org, cv2.FONT_HERSHEY_SIMPLEX, scale, (0, 0, 0), 5, cv2.LINE_AA)
+    cv2.putText(out, "20", org, cv2.FONT_HERSHEY_SIMPLEX, scale, color, 2, cv2.LINE_AA)
+    a1, a2 = math.radians(81.0), math.radians(99.0)
+    angs = np.linspace(a1, a2, 12)
+    rim = np.concatenate([np.column_stack([B.R_DOUBLE_OUT * np.cos(angs), B.R_DOUBLE_OUT * np.sin(angs)]),
+                          np.column_stack([B.R_OUTER_BULL * np.cos(angs[::-1]), B.R_OUTER_BULL * np.sin(angs[::-1])])])
+    cv2.polylines(out, [cal.board_to_image(rim).astype(np.int32)], True, color, 2, cv2.LINE_AA)
     return out

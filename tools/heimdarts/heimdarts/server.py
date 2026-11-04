@@ -20,7 +20,7 @@ API_VERSION = "2.0.2-heimdarts"
 def make_handler(app: HeimDarts):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
-        server_version = "HeimDarts/0.1"
+        server_version = "HeimDarts/0.2"
 
         def log_message(self, fmt, *args):  # ruhig bleiben
             pass
@@ -123,6 +123,18 @@ def make_handler(app: HeimDarts):
                 if path == "/hd/calibration/clear":
                     app.clear_calibration(int(body["cam"]))
                     return self._json({"ok": True})
+                if path == "/hd/autocalibrate":
+                    if body.get("cam") is None:
+                        return self._json({"results": app.autocalibrate_all()})
+                    return self._json(app.autocalibrate(int(body["cam"])))
+                if path == "/hd/calibration/rotate":
+                    app.rotate(int(body["cam"]), int(body.get("steps", 1)))
+                    return self._json({"ok": True})
+                if path == "/hd/calibration/twenty":
+                    app.twenty(int(body["cam"]), float(body["x"]), float(body["y"]))
+                    return self._json({"ok": True})
+                if path == "/hd/fps":
+                    return self._json({"fps": app.set_fps(int(body["fps"]))})
                 if path == "/hd/reference":
                     app.recapture_reference()
                     return self._json({"ok": True})
@@ -190,7 +202,7 @@ def make_handler(app: HeimDarts):
                         self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: "
                                          + str(len(data)).encode() + b"\r\n\r\n" + data + b"\r\n")
                         self.wfile.flush()
-                    time.sleep(0.12)
+                    time.sleep(1.0 / min(10, app.fps))   # Vorschau höchstens 10 Bilder/s
             except (BrokenPipeError, ConnectionError, OSError):
                 pass
 

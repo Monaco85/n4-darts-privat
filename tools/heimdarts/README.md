@@ -36,12 +36,19 @@ Autodarts muss auch geschlossen sein, damit HeimDarts die Kameras öffnen kann.
 
 1. **Kameras:** Unter *Einstellungen* „Kameras suchen“, die gefundenen Nummern (z. B. `0`, `1`, `2`)
    untereinander eintragen und „Übernehmen“.
-2. **Kalibrieren:** Bei jeder Kamera „Kalibrieren“ und im Standbild fünf Punkte anklicken: viermal die
-   Außenkante des Doppelrings an den Grenzen 20|1, 6|10, 3|19, 11|14 und zuletzt die Mitte des Bulls.
-   Die kleine Scheibe rechts zeigt, welcher Punkt dran ist; die Lupe hilft beim Zielen. Danach liegt
-   das gelbe Gitter im Livebild auf der Scheibe – sonst neu kalibrieren.
+2. **Kalibrieren – automatisch:** „Alle automatisch kalibrieren“ drücken. HeimDarts findet die Scheibe
+   selbst über den roten und grünen Doppel- und Triple-Ring, die Feldgrenzen und die Bull-Mitte.
+   Beim allerersten Mal öffnet sich danach ein Fenster mit dem Kamerabild: Liegt die gelbe **20**
+   nicht auf der echten 20, **einmal irgendwo ins Feld der echten 20 klicken** (oder mit „Drehen“
+   korrigieren). Bei jeder späteren Kalibrierung wird die Lage der 20 übernommen – dann geht alles
+   ohne Klick, auch über „Kalibrieren“ im Board-Menü von n4-darts.
+   Neue Kameras ohne Kalibrierung werden beim Start einmal von selbst automatisch kalibriert.
+   *Von Hand (5 Punkte)* gibt es im Kalibrierfenster weiterhin als Ausweg.
 3. **Leere Scheibe:** Ohne Darts in der Scheibe „Leere Scheibe neu aufnehmen“ drücken.
-4. **Prüfen:** „Erkennung einblenden“ anhaken und ein paar Darts werfen. Der rote Fleck ist der
+4. **Bildrate:** Unter *Einstellungen* zwischen 5 und 30 Bildern pro Sekunde einstellbar (Standard 15).
+   Weniger Bilder = weniger Last für den PC; 10–15 reichen zum Spielen. Die Wartezeiten der Erkennung
+   (ruhiges Bild, Hand) gelten in Sekunden und passen sich der Bildrate an.
+5. **Prüfen:** „Erkennung einblenden“ anhaken und ein paar Darts werfen. Der rote Fleck ist der
    erkannte Dart, die türkise Linie seine Achse, der grüne Kreis die Spitze.
 
 Mit mindestens **zwei, besser drei Kameras** ist die Erkennung genau: Jede Kamera liefert eine Linie
@@ -57,10 +64,23 @@ Kamera wird die sichtbare Spitze genommen – das ist deutlich ungenauer.
 - Eine große, längere Bewegung ist eine Hand („Takeout started“). Sieht die Scheibe danach wieder aus
   wie leer, meldet HeimDarts „Takeout finished“ und n4-darts wechselt den Spieler.
 - „Reset“, „Stopp/Start“ und „Kalibrieren“ aus dem Board-Menü von n4-darts funktionieren. „Kalibrieren“
-  nimmt dabei die leere Scheibe neu auf (die Kalibrierung selbst geschieht hier per Klick).
+  kalibriert alle Kameras automatisch neu und nimmt die leere Scheibe neu auf.
 
-## Grenzen (Stand 0.1)
+## So funktioniert die Autokalibrierung
 
+1. Rote und grüne Pixel suchen; Doppel- und Triple-Ring sind die beiden großen ringförmigen Flecken.
+   An ihre Außenkanten wird je eine Ellipse gelegt.
+2. Entlang der Ringe die Wechsel Rot↔Grün suchen: Das sind die Segmentgrenzen (bis zu 40 Punkte mit
+   bekannter Lage). Dazu kommt die Bull-Mitte.
+3. Feinabgleich: Rundherum werden die Kanten aller Farbringe abgetastet und die Abbildung daran
+   angepasst. In der Simulation liegt die Abweichung danach bei 0,3–0,5 mm (von Hand geklickt ~1 mm).
+4. Die Farben wiederholen sich alle zwei Felder – welches rote Feld die 20 ist, kommt von der vorigen
+   Kalibrierung, sonst vom Zahlenring (nur wenn eindeutig), sonst von deinem einen Klick.
+
+## Grenzen (Stand 0.2)
+
+- Die Autokalibrierung braucht eine normale Steeldartscheibe mit roten und grünen Ringen und Licht, bei
+  dem die Farben kräftig erscheinen. Klappt es nicht, sagt die Meldung unter der Kamera warum.
 - Getestet ist alles mit simulierten Kameras. Mit den echten Kameras müssen sehr wahrscheinlich die
   Regler nachgestellt werden (Empfindlichkeit, kleinster/größter Dart).
 - Linsenverzerrung von Weitwinkelkameras wird nicht ausgeglichen; am Rand der Scheibe kann das ein

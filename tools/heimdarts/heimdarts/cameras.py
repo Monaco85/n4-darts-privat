@@ -25,24 +25,38 @@ class FrameSource:
     def info(self) -> dict:
         return {"spec": self.spec, "ok": False, "width": 0, "height": 0, "error": None}
 
+    def set_fps(self, fps: float) -> None:
+        pass
+
     def close(self) -> None:
         pass
 
 
 class OpenCVSource(FrameSource):
-    """Liest Bilder in einem eigenen Thread; read() liefert immer das neueste."""
+    """Liest Bilder in einem eigenen Thread; read() liefert immer das neueste.
 
-    def __init__(self, spec: str, width: int = 1280, height: int = 720):
+    Die Bildrate (fps) wird bei der Kamera angefragt. Liefert sie trotzdem mehr, werden die
+    überzähligen Bilder nur abgeholt (grab), aber nicht umgewandelt – das spart Rechenzeit.
+    """
+
+    def __init__(self, spec: str, width: int = 1280, height: int = 720, fps: float = 15.0):
         self.spec = spec
         self.want = (width, height)
+        self.fps = float(fps)
+        self._fps_changed = False
         self._frame: np.ndarray | None = None
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._error: str | None = None
         self._size = (0, 0)
         self._last_ok = 0.0
+        self._rate = 0.0
         self._thread = threading.Thread(target=self._run, name=f"kamera-{spec}", daemon=True)
         self._thread.start()
+
+    def set_fps(self, fps: float) -> None:
+        self.fps = float(fps)
+        self._fps_changed = True
 
     def _open(self):
         if self.spec.strip().isdigit():
@@ -52,6 +66,8 @@ class OpenCVSource(FrameSource):
             if cap.isOpened():
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.want[0])
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.want[1])
+                cap.set(cv2.CAP_PROP_FPS, self.fps)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             return cap, False
         if not os.path.exists(self.spec):
             raise FileNotFoundError(f"Datei nicht gefunden: {self.spec}")
@@ -70,12 +86,15 @@ class OpenCVSource(FrameSource):
                 cap.release()
                 self._stop.wait(2.0)
                 continue
-            fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+            file_fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
             self._error = None
             fails = 0
+            next_due = 0.0
             while not self._stop.is_set():
-                ok, frame = cap.read()
-                if not ok:
+                if self._fps_changed and not is_file:
+                    self._fps_changed = False
+                    cap.set(cv2.CAP_PROP_FPS, self.fps)
+                if not cap.grab():
                     if is_file:
                         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                         continue
@@ -86,12 +105,24 @@ class OpenCVSource(FrameSource):
                     time.sleep(0.03)
                     continue
                 fails = 0
+                now = time.time()
+                period = 1.0 / max(1.0, self.fps)
+                if now < next_due - 0.3 * period and not is_file:
+                    continue                      # Bild verwerfen, ohne es umzuwandeln
+                # Takt halten (kleines Zittern der Kamera ausgleichen), nach Hängern neu ansetzen
+                next_due = next_due + period if now - next_due < period else now + period
+                ok, frame = cap.retrieve()
+                if not ok:
+                    continue
                 with self._lock:
+                    if self._last_ok:
+                        dt = max(1e-3, now - self._last_ok)
+                        self._rate = 0.9 * self._rate + 0.1 * (1.0 / dt) if self._rate else 1.0 / dt
                     self._frame = frame
                     self._size = (frame.shape[1], frame.shape[0])
-                    self._last_ok = time.time()
+                    self._last_ok = now
                 if is_file:
-                    time.sleep(1.0 / max(1.0, min(fps, 60.0)))
+                    time.sleep(1.0 / max(1.0, min(file_fps, self.fps, 60.0)))
             cap.release()
 
     def read(self) -> np.ndarray | None:
@@ -103,6 +134,7 @@ class OpenCVSource(FrameSource):
     def info(self) -> dict:
         ok = self.read() is not None
         return {"spec": self.spec, "ok": ok, "width": self._size[0], "height": self._size[1],
+                "fps": round(self._rate, 1) if ok else 0.0,
                 "error": None if ok else (self._error or "Warte auf Bilder …")}
 
     def close(self) -> None:
@@ -124,16 +156,17 @@ class SimSource(FrameSource):
         ok = self.index < len(self.scene.cameras)
         cam = self.scene.cameras[self.index] if ok else None
         return {"spec": self.spec, "ok": ok, "width": cam.width if cam else 0,
-                "height": cam.height if cam else 0,
+                "height": cam.height if cam else 0, "fps": None,
                 "error": None if ok else "Es gibt nur sim:0 bis sim:2"}
 
 
-def open_source(spec: str, scene_factory, width: int = 1280, height: int = 720) -> FrameSource:
+def open_source(spec: str, scene_factory, width: int = 1280, height: int = 720,
+                fps: float = 15.0) -> FrameSource:
     s = spec.strip()
     if s.lower().startswith("sim"):
         idx = int(s.split(":", 1)[1]) if ":" in s else 0
         return SimSource(s, scene_factory(), idx)
-    return OpenCVSource(s, width, height)
+    return OpenCVSource(s, width, height, fps)
 
 
 def probe_cameras(max_index: int = 6, skip: set[int] | None = None) -> list[dict]:

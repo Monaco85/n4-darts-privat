@@ -41,7 +41,10 @@
   <section class="panel cams-panel">
     <div class="panel-head">
       <h2>Kameras</h2>
-      <label class="toggle"><input type="checkbox" id="chk-debug"> Erkennung einblenden</label>
+      <div class="head-tools">
+        <label class="toggle"><input type="checkbox" id="chk-debug"> Erkennung einblenden</label>
+        <button id="btn-autocal-all" class="accent">Alle automatisch kalibrieren</button>
+      </div>
     </div>
     <div class="cams" id="cams"></div>
   </section>
@@ -56,6 +59,10 @@
       <button id="btn-sources" class="accent">Übernehmen</button>
     </div>
     <p class="hint" id="probe-result"></p>
+
+    <label class="label" for="set-fps">Bildrate <b id="val-fps"></b></label>
+    <input type="range" id="set-fps" min="5" max="30" step="1">
+    <p class="hint">Weniger Bilder pro Sekunde = weniger Last für den PC. 10–15 reichen zum Spielen.</p>
 
     <label class="label" for="set-thr">Empfindlichkeit (Grauwertschwelle) <b id="val-thr"></b></label>
     <input type="range" id="set-thr" min="8" max="60" step="1">
@@ -84,16 +91,31 @@
       <canvas id="cal-loupe" width="180" height="180" hidden></canvas>
     </div>
     <aside class="cal-side">
-      <p class="step" id="cal-step"></p>
-      <svg id="cal-mini" viewBox="-232 -232 464 464"></svg>
-      <p class="hint">Klick genau auf den markierten Punkt im Kamerabild. Die Lupe hilft beim Zielen.</p>
-      <div class="row">
-        <button id="cal-undo">Zurück</button>
-        <button id="cal-refresh">Neues Standbild</button>
+      <div id="cal-auto">
+        <button id="cal-run" class="accent wide">Automatisch erkennen</button>
+        <p class="step" id="cal-result"></p>
+        <p class="hint">Liegt die gelbe <b>20</b> nicht auf der echten 20? Dann einmal irgendwo ins Feld der echten 20 klicken – oder drehen:</p>
+        <div class="row">
+          <button id="cal-rot-left" title="Um zwei Felder drehen">⟲ Drehen</button>
+          <button id="cal-rot-right" title="Um zwei Felder drehen">Drehen ⟳</button>
+        </div>
+        <div class="row">
+          <button id="cal-to-hand">Von Hand (5 Punkte)</button>
+          <button id="cal-clear">Kalibrierung löschen</button>
+        </div>
       </div>
-      <div class="row">
-        <button id="cal-save" class="accent" disabled>Speichern</button>
-        <button id="cal-clear">Kalibrierung löschen</button>
+      <div id="cal-hand" hidden>
+        <p class="step" id="cal-step"></p>
+        <svg id="cal-mini" viewBox="-232 -232 464 464"></svg>
+        <p class="hint">Klick genau auf den markierten Punkt im Kamerabild. Die Lupe hilft beim Zielen.</p>
+        <div class="row">
+          <button id="cal-undo">Zurück</button>
+          <button id="cal-refresh">Neues Standbild</button>
+        </div>
+        <div class="row">
+          <button id="cal-save" class="accent" disabled>Speichern</button>
+          <button id="cal-to-auto">Abbrechen</button>
+        </div>
       </div>
       <p class="hint" id="cal-msg"></p>
     </aside>

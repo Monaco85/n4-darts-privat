@@ -1,6 +1,6 @@
 [project]
 name = "heimdarts"
-version = "0.1.0"
+version = "0.2.0"
 description = "Eigene Darterkennung mit Kameras, kompatibel zur Board-Manager-Schnittstelle von n4-darts"
 requires-python = ">=3.11"
 dependencies = ["numpy", "opencv-python"]

@@ -201,3 +201,11 @@ dialog::backdrop { background: rgb(0 0 0 / 0.7); }
 }
 .step { font: 15px var(--mono); margin: 0 0 10px; }
 #cal-mini { width: 100%; max-width: 240px; display: block; }
+
+.head-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
+.cam-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.cam-note { padding: 0 10px 10px; font-size: 13px; color: var(--muted); }
+.cam-note.warn { color: var(--warn); }
+.cam-note.bad { color: var(--danger); }
+button.wide { width: 100%; }
+#cal-result { color: var(--text); }
