@@ -271,6 +271,13 @@ class HeimDarts:
                 frames = [s.read() for s in sources]
                 self._frames = frames
                 for i, f in enumerate(frames):
+                    cal = self.calibrations[i] if i < len(self.calibrations) else None
+                    if f is not None and cal is not None and (cal.width, cal.height) != (f.shape[1], f.shape[0]):
+                        # Andere Auflösung als bei der Kalibrierung: die Punkte stimmen nicht mehr
+                        self._log("warnung", f"Kamera {i + 1}: Auflösung geändert ({cal.width}×{cal.height} → "
+                                             f"{f.shape[1]}×{f.shape[0]}), Kalibrierung wird neu gemacht")
+                        self._set_calibration(i, None)
+                        self._autocal_tried.discard(i)
                     if f is not None and i < len(self.calibrations) and self.calibrations[i] is None \
                             and i not in self._autocal_tried:
                         self._autocal_tried.add(i)   # einmal von selbst versuchen
@@ -303,6 +310,7 @@ class HeimDarts:
             self._log("dart", f"{hit['label']} bei x={ev['x']:.1f} y={ev['y']:.1f} mm, "
                               f"{ev['method']}, Kameras {[c + 1 for c in ev['cams']]}{note}",
                       x=ev["x"], y=ev["y"], label=hit["label"])
+            self._record_dart(ev)
         elif ev["type"] == "takeout":
             self.bridge.takeout_finished()
             self._log("takeout", "Darts entfernt")
@@ -314,6 +322,37 @@ class HeimDarts:
                 self._log("warnung", "Änderung erkannt, aber keine Kamera ist kalibriert")
             else:
                 self._log("info", "Änderung erkannt, aber kein Dart")
+
+    RECORD_KEEP = 60   # so viele Darts bleiben in data/aufnahmen
+
+    def _record_dart(self, ev: dict) -> None:
+        """Speichert pro Dart die Graubilder vor/nach dem Wurf und die Beobachtungen (Fehlersuche).
+
+        Abschaltbar mit "record_darts": false in config.json. Ältere Aufnahmen werden gelöscht.
+        """
+        if not self.config.get("record_darts", True) or self.has_sim:
+            return
+        try:
+            root = os.path.join(self.data_dir, "aufnahmen")
+            folder = os.path.join(root, time.strftime("%Y%m%d-%H%M%S") + f"-{int(time.time() * 1000) % 1000:03d}")
+            os.makedirs(folder, exist_ok=True)
+            for i, (before, after) in self.detector.last_dart_frames.items():
+                if before is not None:
+                    cv2.imwrite(os.path.join(folder, f"cam{i}-vorher.png"), before)
+                cv2.imwrite(os.path.join(folder, f"cam{i}-nachher.png"), after)
+            info = {k: ev[k] for k in ("x", "y", "hit", "method", "cams", "observations")}
+            info["calibrations"] = [c.to_dict() if c else None for c in self.calibrations]
+            info["detector"] = self.detector.config.to_dict()
+            with open(os.path.join(folder, "dart.json"), "w", encoding="utf-8") as f:
+                json.dump(info, f, indent=2, ensure_ascii=False)
+            old = sorted(os.listdir(root))[:-self.RECORD_KEEP]
+            for name in old:
+                p = os.path.join(root, name)
+                for fn in os.listdir(p):
+                    os.remove(os.path.join(p, fn))
+                os.rmdir(p)
+        except (OSError, ValueError) as e:
+            self._log("warnung", f"Aufnahme nicht gespeichert: {e}")
 
     def _log(self, kind: str, text: str, **extra) -> None:
         self.log.appendleft({"time": time.strftime("%H:%M:%S"), "kind": kind, "text": text, **extra})

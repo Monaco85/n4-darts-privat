@@ -98,6 +98,7 @@ class DartDetector:
         self._idle_ticks = 0
         self._dirty = False
         self._accept_next = False
+        self.last_dart_frames: dict[int, tuple[np.ndarray, np.ndarray]] = {}
 
     # ------------------------------------------------------------------ Verwaltung
     def accept_current(self) -> None:
@@ -301,6 +302,8 @@ class DartDetector:
 
         x, y, method, used = fuse_observations(obs, cfg)
         hit = B.score_at(x, y)
+        # Für die Aufzeichnung (Fehlersuche): Bilder vor und nach dem Dart, solange ref noch das alte ist
+        self.last_dart_frames = {i: (self.cams[i].ref, grays[i]) for i in active}
         accept()
         self.status.darts_on_board += 1
         return [{"type": "dart", "x": x, "y": y, "hit": hit.to_dict(), "method": method,
