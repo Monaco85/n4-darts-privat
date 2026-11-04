@@ -5,12 +5,21 @@ See `docs/architecture.md` for the design and `docs/adr/` for the key decisions.
 
 ## Layout
 
-| Path              | What                                                       |
-| ----------------- | ---------------------------------------------------------- |
-| `packages/engine` | Pure game rules (X01), no dependencies, shared with the UI |
-| `packages/server` | Node server: board gateway, matches, tournaments, API      |
-| `packages/web`    | React app: `/station/n`, `/admin`, `/display`              |
-| `tools/board-sim` | Fake Autodarts Board Manager for development and tests     |
+| Path              | What                                                                 |
+| ----------------- | -------------------------------------------------------------------- |
+| `packages/engine` | Pure game rules (X01), no dependencies, shared with the UI           |
+| `packages/server` | Node server: board gateway, matches, tournaments, API                |
+| `packages/web`    | React app: `/station/n`, `/admin`, `/display`                        |
+| `tools/board-sim` | Fake Autodarts Board Manager for development and tests               |
+| `tools/heimdarts` | HeimDarts: own camera detection (Python/OpenCV), Board Manager API   |
+
+## Eigene Erkennung ohne Autodarts (HeimDarts)
+
+`tools/heimdarts` erkennt die Darts selbst mit den Kameras und spricht dieselbe lokale Schnittstelle
+wie der Board Manager (`:3180`, siehe `docs/board-manager-api.md`). n4-darts merkt keinen
+Unterschied: HeimDarts starten, dann n4-darts mit dem echten Board und der Adresse
+`http://localhost:3180`. Fertiges Windows-Paket mit eigenem Python unter **Releases**
+(`heimdarts-windows.zip`), Anleitung in [`tools/heimdarts/README.md`](tools/heimdarts/README.md).
 
 ## Run it locally
 

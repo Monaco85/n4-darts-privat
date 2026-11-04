@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HeimDarts</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>HeimDarts</h1>
+    <span class="sub">Eigene Darterkennung für n4-darts · offline</span>
+  </div>
+  <div class="pills">
+    <span class="pill" id="pill-detector">…</span>
+    <span class="pill" id="pill-n4">…</span>
+    <span class="pill" id="pill-cams">…</span>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="panel visit">
+    <div class="panel-head">
+      <h2>Aktuelle Aufnahme</h2>
+      <span class="muted" id="board-status"></span>
+    </div>
+    <div class="slots" id="slots"></div>
+    <div class="board-wrap">
+      <svg id="board" viewBox="-232 -232 464 464" role="img" aria-label="Dartscheibe mit erkannten Darts"></svg>
+      <p class="hint" id="sim-hint" hidden>Simulation: Klick auf die Scheibe wirft einen Dart. Er läuft durch die echte Bilderkennung.</p>
+    </div>
+    <div class="row">
+      <button id="btn-takeout" class="accent" hidden>Darts ziehen</button>
+      <button id="btn-reset">Reset</button>
+      <button id="btn-startstop">Stopp</button>
+      <button id="btn-reference" title="Nur bei leerer Scheibe">Leere Scheibe neu aufnehmen</button>
+    </div>
+  </section>
+
+  <section class="panel cams-panel">
+    <div class="panel-head">
+      <h2>Kameras</h2>
+      <label class="toggle"><input type="checkbox" id="chk-debug"> Erkennung einblenden</label>
+    </div>
+    <div class="cams" id="cams"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Einstellungen</h2></div>
+    <label class="label" for="sources">Kameraquellen (eine pro Zeile)</label>
+    <textarea id="sources" rows="3" spellcheck="false"></textarea>
+    <p class="hint">Zahl = USB-Kamera (0, 1, 2 …), <code>sim:0</code>–<code>sim:2</code> = Simulation, oder Pfad zu einer Videodatei.</p>
+    <div class="row">
+      <button id="btn-probe">Kameras suchen</button>
+      <button id="btn-sources" class="accent">Übernehmen</button>
+    </div>
+    <p class="hint" id="probe-result"></p>
+
+    <label class="label" for="set-thr">Empfindlichkeit (Grauwertschwelle) <b id="val-thr"></b></label>
+    <input type="range" id="set-thr" min="8" max="60" step="1">
+    <label class="label" for="set-min">Kleinster Dart (Promille der Bildfläche) <b id="val-min"></b></label>
+    <input type="range" id="set-min" min="0.03" max="1" step="0.01">
+    <label class="label" for="set-max">Größter Dart (Prozent der Bildfläche) <b id="val-max"></b></label>
+    <input type="range" id="set-max" min="1" max="15" step="0.5">
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Protokoll</h2></div>
+    <ul class="log" id="log"></ul>
+    <p class="hint">n4-darts verbindet sich mit <code id="api-url"></code>. Bei <code>start-echtes-board.cmd</code> einfach Enter drücken.</p>
+  </section>
+</main>
+
+<dialog id="cal-dialog">
+  <div class="cal-head">
+    <h2 id="cal-title">Kalibrieren</h2>
+    <button id="cal-close" aria-label="Schließen">✕</button>
+  </div>
+  <div class="cal-body">
+    <div class="cal-image">
+      <img id="cal-img" alt="Standbild der Kamera">
+      <svg id="cal-marks"></svg>
+      <canvas id="cal-loupe" width="180" height="180" hidden></canvas>
+    </div>
+    <aside class="cal-side">
+      <p class="step" id="cal-step"></p>
+      <svg id="cal-mini" viewBox="-232 -232 464 464"></svg>
+      <p class="hint">Klick genau auf den markierten Punkt im Kamerabild. Die Lupe hilft beim Zielen.</p>
+      <div class="row">
+        <button id="cal-undo">Zurück</button>
+        <button id="cal-refresh">Neues Standbild</button>
+      </div>
+      <div class="row">
+        <button id="cal-save" class="accent" disabled>Speichern</button>
+        <button id="cal-clear">Kalibrierung löschen</button>
+      </div>
+      <p class="hint" id="cal-msg"></p>
+    </aside>
+  </div>
+</dialog>
+
+<script src="/app.js"></script>
+</body>
+</html>
