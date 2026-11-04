@@ -5,6 +5,8 @@ dieselbe lokale Schnittstelle bereit, die n4-darts vom Board Manager erwartet (P
 [`docs/board-manager-api.md`](../../docs/board-manager-api.md)). n4-darts läuft deshalb unverändert darauf und liefert die
 ganze Oberfläche: Stationen, Turniere, Statistiken, Beamer-Ansicht.
 
+Stand, Befunde und nächste Schritte stehen in [`UEBERGABE.md`](UEBERGABE.md).
+
 ```
 USB-Kameras ──► HeimDarts (Erkennung, :3180) ──► n4-darts (Spiel, :5173 / :3000)
 ```
@@ -46,6 +48,7 @@ Autodarts muss auch geschlossen sein, damit HeimDarts die Kameras öffnen kann.
    *Von Hand (5 Punkte)* gibt es im Kalibrierfenster weiterhin als Ausweg.
 3. **Leere Scheibe:** Ohne Darts in der Scheibe „Leere Scheibe neu aufnehmen“ drücken.
 4. **Bildrate:** Unter *Einstellungen* zwischen 5 und 30 Bildern pro Sekunde einstellbar (Standard 15).
+   Unter jeder Kamera steht die verwendete Rate; liefert die Kamera mehr, steht das in Klammern dabei.
    Weniger Bilder = weniger Last für den PC; 10–15 reichen zum Spielen. Die Wartezeiten der Erkennung
    (ruhiges Bild, Hand) gelten in Sekunden und passen sich der Bildrate an.
 5. **Prüfen:** „Erkennung einblenden“ anhaken und ein paar Darts werfen. Der rote Fleck ist der
@@ -68,16 +71,18 @@ Kamera wird die sichtbare Spitze genommen – das ist deutlich ungenauer.
 
 ## So funktioniert die Autokalibrierung
 
-1. Rote und grüne Pixel suchen; Doppel- und Triple-Ring sind die beiden großen ringförmigen Flecken.
-   An ihre Außenkanten wird je eine Ellipse gelegt.
-2. Entlang der Ringe die Wechsel Rot↔Grün suchen: Das sind die Segmentgrenzen (bis zu 40 Punkte mit
-   bekannter Lage). Dazu kommt die Bull-Mitte.
-3. Feinabgleich: Rundherum werden die Kanten aller Farbringe abgetastet und die Abbildung daran
-   angepasst. In der Simulation liegt die Abweichung danach bei 0,3–0,5 mm (von Hand geklickt ~1 mm).
+1. Rote und grüne Pixel suchen (großzügig – unter LED-Licht wirkt Rot oft rosa, Grün blass) und das
+   Bull finden: kleiner roter Fleck mit grünem Ring.
+2. Vom Bull aus 720 Strahlen nach außen: Auf jedem Strahl das Paar „Triple-Ring, dann Doppelring“ am
+   Größenverhältnis 107:170 erkennen. Logos und Aufkleber neben der Scheibe und blasse oder dünne
+   Ringstücke stören so nur einzelne Strahlen.
+3. Wo die Ringfarbe von Strahl zu Strahl wechselt, liegt eine Segmentgrenze (bis zu 40 Punkte mit
+   bekannter Lage); dazu die Bull-Mitte. Feinabgleich an den Kanten aller Farbringe. In der
+   Simulation liegt die Abweichung danach bei 0,2–0,3 mm (höchstens 0,5 mm; von Hand geklickt ~1 mm).
 4. Die Farben wiederholen sich alle zwei Felder – welches rote Feld die 20 ist, kommt von der vorigen
    Kalibrierung, sonst vom Zahlenring (nur wenn eindeutig), sonst von deinem einen Klick.
 
-## Grenzen (Stand 0.2)
+## Grenzen (Stand 0.2.1)
 
 - Die Autokalibrierung braucht eine normale Steeldartscheibe mit roten und grünen Ringen und Licht, bei
   dem die Farben kräftig erscheinen. Klappt es nicht, sagt die Meldung unter der Kamera warum.

@@ -1,17 +1,23 @@
 """Automatische Kalibrierung: findet die Scheibe im Kamerabild – ohne Klicken.
 
 Ablauf:
-  1. Rote und grüne Pixel suchen. Doppel- und Triple-Ring sind die beiden großen ringförmigen
-     Flecken; an ihre Außenkanten (170 mm und 107 mm) wird je eine Ellipse gelegt.
-  2. Entlang jeder Ellipse die Wechsel Rot↔Grün suchen. Das sind die Segmentgrenzen – Punkte mit
-     bekannter Lage auf der Scheibe. Zusammen mit der Bull-Mitte ergibt das die Homographie.
-  3. Die Farben wiederholen sich alle zwei Segmente, die Lage der 20 ist also noch offen (10
-     Möglichkeiten). Entschieden wird über die vorige Kalibrierung, sonst über den Zahlenring:
-     zwei- und einstellige Zahlen wechseln sich in einem eindeutigen Muster ab.
+  1. Rote und grüne Pixel suchen (großzügig: unter LED-Licht wirkt Rot oft rosa, Grün blass).
+  2. Das Bull finden: kleiner roter Fleck, ringsum grün.
+  3. Vom Bull aus 720 Strahlen nach außen abtasten. Auf jedem Strahl das Paar „Triple-Ring, dann
+     Doppelring“ suchen – erkennbar am Größenverhältnis 107:170. Logos, Aufkleber und Lücken
+     stören so nur einzelne Strahlen. Linien durch die Bull-Mitte sind auch auf der Scheibe Linien
+     durch die Mitte; die Segmentgrenzen liegen also genau auf solchen Strahlen.
+  4. Wo die Farbe des Rings von Strahl zu Strahl wechselt, liegt eine Segmentgrenze (bis zu 40
+     Punkte mit bekannter Lage) – daraus und aus der Bull-Mitte die Homographie, dann Feinabgleich
+     an allen Ringkanten.
+  5. Die Farben wiederholen sich alle zwei Segmente, die Lage der 20 ist also noch offen (10
+     Möglichkeiten). Entschieden wird über die vorige Kalibrierung, sonst über den Zahlenring
+     (nur wenn eindeutig), sonst per Klick ins Feld der 20.
 """
 from __future__ import annotations
 
 import math
+import warnings
 from dataclasses import dataclass
 
 import cv2
@@ -70,139 +76,181 @@ def set_twenty(cal: Calibration, x: float, y: float) -> Calibration:
 
 # ---------------------------------------------------------------------------------- Farben
 def color_masks(frame: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Rote und grüne Flächen. Bewusst großzügig; falsche Treffer (Logos, Aufkleber) filtert
+    später die Ringstruktur heraus."""
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     h, s, v = cv2.split(hsv)
-    n = h.size
-    red = green = None
-    for s_min in (110, 85, 60, 45):
-        sat = (s >= s_min) & (v >= 45)
-        red = sat & ((h <= 10) | (h >= 166))
-        green = sat & (h >= 36) & (h <= 96)
-        if red.sum() > 0.002 * n and green.sum() > 0.002 * n:
-            break
+    sat = (s >= 42) & (v >= 55)
+    red = sat & ((h <= 8) | (h >= 168))
+    green = sat & (h >= 45) & (h <= 92)
     return red.astype(np.uint8), green.astype(np.uint8)
 
 
-# ---------------------------------------------------------------------------------- Ringe
-@dataclass
-class _Ring:
-    center: tuple[float, float]
-    axes: tuple[float, float]     # Halbachsen
-    angle: float                  # Grad
-    hull_area: float
-
-    def point(self, t: np.ndarray, scale: float | np.ndarray = 1.0) -> np.ndarray:
-        a = math.radians(self.angle)
-        ca, sa = math.cos(a), math.sin(a)
-        x = self.axes[0] * np.cos(t) * scale
-        y = self.axes[1] * np.sin(t) * scale
-        return np.stack([self.center[0] + ca * x - sa * y, self.center[1] + sa * x + ca * y], axis=-1)
-
-
-def _fit_ring(contour: np.ndarray, shape) -> _Ring | None:
-    h, w = shape[:2]
-    pts = contour.reshape(-1, 2).astype(np.float64)
-    inside = (pts[:, 0] > 2) & (pts[:, 1] > 2) & (pts[:, 0] < w - 3) & (pts[:, 1] < h - 3)
-    # Nur die Außenkante: Punkte auf der konvexen Hülle. Ist der Ring vom Bildrand abgeschnitten,
-    # läuft die Kontur sonst auch an der Innenkante zurück.
-    hull = cv2.convexHull(contour)
-    on_hull = np.array([cv2.pointPolygonTest(hull, (float(x), float(y)), True) < 1.5 for x, y in pts])
-    pts = pts[inside & on_hull]
-    if len(pts) < 30:
-        return None
-    for _ in range(3):
-        (cx, cy), (ew, eh), ang = cv2.fitEllipseAMS(pts.astype(np.float32))
-        if not (np.isfinite([cx, cy, ew, eh]).all() and ew > 4 and eh > 4):
-            return None
-        a = math.radians(ang)
-        d = pts - (cx, cy)
-        u = (d[:, 0] * math.cos(a) + d[:, 1] * math.sin(a)) / (ew / 2)
-        v = (-d[:, 0] * math.sin(a) + d[:, 1] * math.cos(a)) / (eh / 2)
-        r = np.hypot(u, v)
-        keep = np.abs(r - 1) < 0.02
-        if keep.all() or keep.sum() < 30:
-            break
-        pts = pts[keep]
-    return _Ring((cx, cy), (ew / 2, eh / 2), ang, 0.0)
-
-
-def find_rings(red: np.ndarray, green: np.ndarray) -> tuple[_Ring | None, _Ring | None]:
-    rg = cv2.morphologyEx(red | green, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
-    rg = cv2.morphologyEx(rg, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-    n_px = rg.size
-    n, labels, stats, cents = cv2.connectedComponentsWithStats(rg, connectivity=8)
-    rings = []
+# ---------------------------------------------------------------------------------- Bull
+def find_bull(red: np.ndarray, green: np.ndarray) -> tuple[float, float] | None:
+    """Mitte des Bulls: kleiner, kompakter roter Fleck mit grünem Ring drumherum."""
+    n, _, stats, cents = cv2.connectedComponentsWithStats(red, connectivity=8)
+    h, w = red.shape
+    angs = np.linspace(0, 2 * np.pi, 48, endpoint=False)
+    best, best_score = None, 0.0
     for j in range(1, n):
         area = stats[j, cv2.CC_STAT_AREA]
-        if area < 0.0004 * n_px:
+        bw, bh = stats[j, cv2.CC_STAT_WIDTH], stats[j, cv2.CC_STAT_HEIGHT]
+        if area < 2 or area > 0.004 * red.size or max(bw, bh) > 4 * max(1, min(bw, bh)):
             continue
-        comp = (labels == j).astype(np.uint8)
-        cs, _ = cv2.findContours(comp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        c = max(cs, key=len)
-        hull_area = cv2.contourArea(cv2.convexHull(c))
-        if hull_area < 0.004 * n_px or area / hull_area > 0.5:
-            continue          # kein Ring (zu klein oder voll ausgefüllt)
-        ring = _fit_ring(c, rg.shape)
-        if ring is not None:
-            ring.hull_area = hull_area
-            rings.append(ring)
-    if not rings:
-        return None, None
-    rings.sort(key=lambda r: -r.hull_area)
-    double = rings[0]
-    treble = None
-    for r in rings[1:]:
-        ratio = r.hull_area / double.hull_area
-        dist = math.hypot(r.center[0] - double.center[0], r.center[1] - double.center[1])
-        if 0.15 < ratio < 0.75 and dist < 0.5 * max(double.axes):
-            treble = r
-            break
-    return double, treble
+        cx, cy = cents[j]
+        rx, ry = max(1.0, bw / 2.0), max(1.0, bh / 2.0)
+        hits = tot = 0
+        for f in (1.5, 1.9, 2.3):      # Single Bull ist 2,5-mal so groß wie das Bullseye
+            xs = np.round(cx + f * rx * np.cos(angs)).astype(int)
+            ys = np.round(cy + f * ry * np.sin(angs)).astype(int)
+            ok = (xs >= 0) & (ys >= 0) & (xs < w) & (ys < h)
+            hits += int(green[ys[ok], xs[ok]].sum())
+            tot += int(ok.sum())
+        score = hits / max(1, tot)
+        if score > best_score:
+            best, best_score = (float(cx), float(cy)), score
+    return best if best_score >= 0.45 else None
 
 
-# ---------------------------------------------------------------------------------- Übergänge
-def _transitions(ring: _Ring, red: np.ndarray, green: np.ndarray, inner: float) -> list[tuple[float, int]]:
-    """Wechsel Rot↔Grün entlang des Rings: Liste (t, Typ). Typ 0 = Rot→Grün, 1 = Grün→Rot (im Uhrzeigersinn)."""
-    h, w = red.shape
-    m = 1440
-    t = np.linspace(0, 2 * np.pi, m, endpoint=False)
-    # Breiter als der Ring selbst abtasten: innen liegen nur schwarze/helle Felder, und die
-    # Perspektive verschiebt den Ring gegenüber der skalierten Ellipse ein wenig.
-    scales = np.linspace(inner, 0.997, 9)
-    pts = ring.point(t[:, None], scales[None, :])           # m × 7 × 2
-    xi = np.round(pts[..., 0]).astype(int)
-    yi = np.round(pts[..., 1]).astype(int)
-    ok = (xi >= 0) & (yi >= 0) & (xi < w) & (yi < h)
-    xi, yi = np.clip(xi, 0, w - 1), np.clip(yi, 0, h - 1)
-    rc = (red[yi, xi] * ok).sum(axis=1)
-    gc = (green[yi, xi] * ok).sum(axis=1)
-    label = np.full(m, -1)
-    label[(rc >= 2) & (rc > gc)] = 0
-    label[(gc >= 2) & (gc > rc)] = 1
-    # Läufe bilden; kurze Lücken (Drähte) überbrücken
-    runs = []  # (start, end, label) mit end exklusiv, zyklisch
-    start = 0
-    for i in range(1, m + 1):
-        if i == m or label[i] != label[start]:
-            runs.append([start, i, label[start]])
+# ---------------------------------------------------------------------------------- Strahlen
+@dataclass
+class _Rays:
+    center: tuple[float, float]
+    phi: np.ndarray        # Winkel im Bild (im Uhrzeigersinn, da y nach unten)
+    t_in: np.ndarray       # Triple-Ring innen/außen (px vom Bull), NaN wenn nicht gefunden
+    t_out: np.ndarray
+    d_in: np.ndarray       # Doppelring innen/außen
+    d_out: np.ndarray
+    t_col: np.ndarray      # Farbe: 0 rot, 1 grün, -1 unbekannt
+    d_col: np.ndarray
+
+
+def _runs(mask: np.ndarray, gap: int) -> list[tuple[int, int]]:
+    idx = np.nonzero(mask)[0]
+    if len(idx) == 0:
+        return []
+    runs, start, prev = [], idx[0], idx[0]
+    for i in idx[1:]:
+        if i - prev > gap + 1:
+            runs.append((start, prev + 1))
             start = i
-    if len(runs) > 1 and runs[0][2] == runs[-1][2]:   # zyklisch zusammenfügen
-        runs[0][0] = runs[-1][0] - m
-        runs.pop()
-    min_run = m / 20 * 0.25
-    colored = [r for r in runs if r[2] >= 0 and r[1] - r[0] >= min_run]
-    out = []
-    max_gap = m * 0.012
-    for a, b in zip(colored, colored[1:] + colored[:1]):
-        if a[2] == b[2]:
+        prev = i
+    runs.append((start, prev + 1))
+    return runs
+
+
+def cast_rays(red: np.ndarray, green: np.ndarray, center, n_rays: int = 720, step: float = 0.5) -> _Rays:
+    h, w = red.shape
+    rg = red | green
+    cx, cy = center
+    phi = np.arange(n_rays) * (2 * np.pi / n_rays)
+    out = {k: np.full(n_rays, np.nan) for k in ("t_in", "t_out", "d_in", "d_out")}
+    t_col = np.full(n_rays, -1)
+    d_col = np.full(n_rays, -1)
+    for k, a in enumerate(phi):
+        dx, dy = math.cos(a), math.sin(a)
+        lim = []
+        if dx > 1e-9:
+            lim.append((w - 1 - cx) / dx)
+        elif dx < -1e-9:
+            lim.append(-cx / dx)
+        if dy > 1e-9:
+            lim.append((h - 1 - cy) / dy)
+        elif dy < -1e-9:
+            lim.append(-cy / dy)
+        rmax = min(lim) if lim else 0
+        if rmax < 10:
             continue
-        gap = (b[0] - a[1]) % m
-        if gap > max_gap:
-            continue          # zu große Lücke: Übergang nicht sicher
-        tm = ((a[1] + gap / 2.0) % m) * (2 * np.pi / m)
-        out.append((tm, 0 if a[2] == 0 else 1))
-    out.sort()
-    return out
+        rs = np.arange(0, rmax, step)
+        xs = np.round(cx + rs * dx).astype(int)
+        ys = np.round(cy + rs * dy).astype(int)
+        col = rg[ys, xs]
+        runs = [(rs[i0], rs[i1 - 1] + step, i0, i1) for i0, i1 in _runs(col, gap=3)]
+        found = None
+        for i, (s0, e0, a0, b0) in enumerate(runs):
+            if s0 < 0.6 * e0 or e0 < 6:          # Bull (beginnt in der Mitte) oder zu nah
+                continue
+            for s1, e1, a1, b1 in runs[i + 1:]:
+                q = e1 / e0
+                if q > 1.95:
+                    break
+                if q >= 1.35 and s1 >= 0.78 * e1 and (e1 - s1) <= 0.25 * e1:
+                    found = (s0, e0, a0, b0, s1, e1, a1, b1)
+                    break
+            if found:
+                break
+        if not found:
+            continue
+        s0, e0, a0, b0, s1, e1, a1, b1 = found
+        out["t_in"][k], out["t_out"][k], out["d_in"][k], out["d_out"][k] = s0, e0, s1, e1
+        for (i0, i1, arr) in ((a0, b0, t_col), (a1, b1, d_col)):
+            r_cnt = int(red[ys[i0:i1], xs[i0:i1]].sum())
+            g_cnt = int(green[ys[i0:i1], xs[i0:i1]].sum())
+            if max(r_cnt, g_cnt) >= 1 and max(r_cnt, g_cnt) >= 2 * min(r_cnt, g_cnt):
+                arr[k] = 0 if r_cnt > g_cnt else 1
+    # Ausreißer: Ringradien ändern sich von Strahl zu Strahl nur wenig
+    for key in ("d_out", "t_out"):
+        v = out[key]
+        ok = np.isfinite(v)
+        if ok.sum() < 10:
+            continue
+        with warnings.catch_warnings():          # Abschnitte ganz ohne Treffer sind normal
+            warnings.simplefilter("ignore", RuntimeWarning)
+            med = np.array([np.nanmedian(np.take(v, range(i - 6, i + 7), mode="wrap")) for i in range(n_rays)])
+        bad = ok & (np.abs(v - med) > 0.06 * med)
+        v[bad] = np.nan
+        if key == "d_out":
+            out["d_in"][bad] = np.nan
+            d_col[bad] = -1
+        else:
+            out["t_in"][bad] = np.nan
+            t_col[bad] = -1
+    return _Rays((float(cx), float(cy)), phi, out["t_in"], out["t_out"], out["d_in"], out["d_out"], t_col, d_col)
+
+
+def ray_transitions(rays: _Rays, red: np.ndarray, green: np.ndarray, ring: str):
+    """Segmentgrenzen auf einem Ring: Liste (Winkel, Typ) und Bildpunkte an der Außenkante.
+    Typ 0 = Rot→Grün, 1 = Grün→Rot (im Uhrzeigersinn)."""
+    h, w = red.shape
+    col = rays.d_col if ring == "double" else rays.t_col
+    r_in = rays.d_in if ring == "double" else rays.t_in
+    r_out = rays.d_out if ring == "double" else rays.t_out
+    n = len(rays.phi)
+    valid = np.nonzero(col >= 0)[0]
+    trans, pts = [], []
+    if len(valid) < 2:
+        return trans, np.zeros((0, 2))
+    cx, cy = rays.center
+    for j in range(len(valid)):
+        a, b = valid[j], valid[(j + 1) % len(valid)]
+        gap = (b - a) % n
+        if col[a] == col[b] or gap == 0 or gap > 6:
+            continue
+        pa, pb = rays.phi[a], rays.phi[a] + gap * (2 * np.pi / n)
+        mid = 0.5 * ((r_in[a] + r_out[a]) / 2 + (r_in[b] + r_out[b]) / 2)
+        half = 0.25 * 0.5 * ((r_out[a] - r_in[a]) + (r_out[b] - r_in[b]))
+        sub = np.linspace(pa, pb, 4 * gap + 1)
+        labels = []
+        for ang in sub:                     # feiner abtasten, wo genau die Farbe wechselt
+            rr = mid + np.array([-half, 0.0, half])
+            xs = np.clip(np.round(cx + rr * math.cos(ang)).astype(int), 0, w - 1)
+            ys = np.clip(np.round(cy + rr * math.sin(ang)).astype(int), 0, h - 1)
+            rc, gc = int(red[ys, xs].sum()), int(green[ys, xs].sum())
+            labels.append(0 if rc > gc else 1 if gc > rc else -1)
+        labels = np.array(labels)
+        ia = np.nonzero(labels == col[a])[0]
+        ib = np.nonzero(labels == col[b])[0]
+        if len(ia) and len(ib) and ia.max() < ib.min():
+            ang = 0.5 * (sub[ia.max()] + sub[ib.min()])
+        else:
+            ang = 0.5 * (pa + pb)
+        f = (ang - pa) / max(1e-9, pb - pa)
+        r_edge = (1 - f) * r_out[a] + f * r_out[b]
+        trans.append((float(ang % (2 * np.pi)), 0 if col[a] == 0 else 1))
+        pts.append((cx + r_edge * math.cos(ang), cy + r_edge * math.sin(ang)))
+    order = np.argsort([t for t, _ in trans])
+    return [trans[i] for i in order], np.array(pts).reshape(-1, 2)[order]
 
 
 def _consecutive_run(trans: list[tuple[float, int]]) -> tuple[list[int], list[int]] | None:
@@ -397,59 +445,54 @@ def refine_with_edges(H: np.ndarray, rgf: np.ndarray, src: np.ndarray, dst: np.n
 def auto_calibrate(frame: np.ndarray, previous: Calibration | None = None) -> AutoCalResult:
     h, w = frame.shape[:2]
     red, green = color_masks(frame)
-    double, treble = find_rings(red, green)
-    if double is None:
-        return AutoCalResult(False, "Keine Scheibe gefunden: rote und grüne Ringe nicht erkennbar. "
+    bull = find_bull(red, green)
+    if bull is None:
+        return AutoCalResult(False, "Bull nicht gefunden: Ist die Scheibe ganz im Bild und gut beleuchtet? "
+                                    "Rot und Grün müssen im Kamerabild erkennbar sein.")
+    rays = cast_rays(red, green, bull)
+    n_ok = int(np.isfinite(rays.d_out).sum())
+    if n_ok < 60:
+        return AutoCalResult(False, f"Triple- und Doppelring nur auf {n_ok} von {len(rays.phi)} Strahlen gefunden. "
                                     "Licht prüfen und darauf achten, dass die Scheibe gut im Bild ist.")
-    t_d = _transitions(double, red, green, 0.88)
+    t_d, pts_d = ray_transitions(rays, red, green, "double")
     run = _consecutive_run(t_d)
     if run is None:
         return AutoCalResult(False, f"Doppelring gefunden, aber nur {len(t_d)} Feldgrenzen sicher erkannt "
                                     "(mind. 6 nebeneinander nötig).", transitions=len(t_d))
-    pts_d = np.array([double.point(np.array([t]))[0] for t, _ in t_d])
     types_d = [typ for _, typ in t_d]
     idx, ks = run
-    H0, _ = cv2.findHomography(_boundary_points(ks, B.R_DOUBLE_OUT), pts_d[idx], 0)
+    H0, _ = cv2.findHomography(np.vstack([_boundary_points(ks, B.R_DOUBLE_OUT), [(0.0, 0.0)]]),
+                               np.vstack([pts_d[idx], [bull]]), 0)
     if H0 is None:
         return AutoCalResult(False, "Homographie aus dem Doppelring nicht berechenbar.", transitions=len(t_d))
     # Alle Grenzen des Doppelrings über die Vorhersage zuordnen (zweimal, mit verbesserter Schätzung)
+    assign = {}
     for _ in range(2):
-        assign = _assign_by_prediction(H0, pts_d, types_d, B.R_DOUBLE_OUT)
-        if len(assign) < 6:
+        a_new = _assign_by_prediction(H0, pts_d, types_d, B.R_DOUBLE_OUT)
+        if len(a_new) < 6:
             break
+        assign = a_new
         ii = list(assign)
-        H1, _ = cv2.findHomography(_boundary_points([assign[i] for i in ii], B.R_DOUBLE_OUT), pts_d[ii], 0)
+        H1, _ = cv2.findHomography(np.vstack([_boundary_points([assign[i] for i in ii], B.R_DOUBLE_OUT), [(0.0, 0.0)]]),
+                                   np.vstack([pts_d[ii], [bull]]), 0)
         if H1 is None:
             break
         H0 = H1
+    if not assign:
+        assign = {i: k for i, k in zip(idx, ks)}
     img_pts = [pts_d[i] for i in assign]
     brd_pts = list(_boundary_points([assign[i] for i in assign], B.R_DOUBLE_OUT))
 
     # Triple-Ring dazunehmen
+    t_t, pts_t = ray_transitions(rays, red, green, "treble")
+    if t_t:
+        a_t = _assign_by_prediction(H0, pts_t, [typ for _, typ in t_t], B.R_TRIPLE_OUT)
+        for i, k in a_t.items():
+            img_pts.append(pts_t[i])
+            brd_pts.append(_boundary_points([k], B.R_TRIPLE_OUT)[0])
     n_trans = len(img_pts)
-    if treble is not None:
-        t_t = _transitions(treble, red, green, 0.85)
-        if t_t:
-            pts_t = np.array([treble.point(np.array([t]))[0] for t, _ in t_t])
-            a_t = _assign_by_prediction(H0, pts_t, [typ for _, typ in t_t], B.R_TRIPLE_OUT)
-            for i, k in a_t.items():
-                img_pts.append(pts_t[i])
-                brd_pts.append(_boundary_points([k], B.R_TRIPLE_OUT)[0])
-            n_trans += len(a_t)
-
-    # Bull-Mitte (roter Punkt) dazunehmen
-    c0 = apply_h(H0, [(0.0, 0.0)])[0]
-    rad = np.hypot(*(apply_h(H0, [(B.R_OUTER_BULL * 2, 0.0)])[0] - c0))
-    x0, y0 = int(max(0, c0[0] - rad)), int(max(0, c0[1] - rad))
-    x1, y1 = int(min(w, c0[0] + rad + 1)), int(min(h, c0[1] + rad + 1))
-    if x1 > x0 and y1 > y0:
-        sub = red[y0:y1, x0:x1]
-        n, labels, stats, cents = cv2.connectedComponentsWithStats(sub, connectivity=8)
-        if n > 1:
-            j = 1 + int(np.argmin([np.hypot(*(cents[i] + (x0, y0) - c0)) for i in range(1, n)]))
-            if stats[j, cv2.CC_STAT_AREA] >= 4 and np.hypot(*(cents[j] + (x0, y0) - c0)) < rad * 0.5:
-                img_pts.append(cents[j] + (x0, y0))
-                brd_pts.append((0.0, 0.0))
+    img_pts.append(np.array(bull))
+    brd_pts.append((0.0, 0.0))
 
     src, dst = np.array(brd_pts, np.float64), np.array(img_pts, np.float64)
     H, inl = cv2.findHomography(src, dst, cv2.RANSAC, 3.0)
@@ -483,7 +526,7 @@ def auto_calibrate(frame: np.ndarray, previous: Calibration | None = None) -> Au
     where = {"vorher": "Lage der 20 von der vorigen Kalibrierung übernommen",
              "zahlen": "Lage der 20 am Zahlenring erkannt",
              "unsicher": "Bitte einmal ins Feld der 20 klicken"}[source]
-    if rms > 4.0:
+    if rms > 6.0:
         return AutoCalResult(False, f"Scheibe gefunden, aber ungenau (±{rms:.1f} px). Kamera ruhig halten "
                                     "und Licht prüfen.", cal, source, rms, n_trans, sc)
     return AutoCalResult(True, f"Scheibe gefunden: {n_trans} Feldgrenzen, ±{rms:.1f} px. {where}.",

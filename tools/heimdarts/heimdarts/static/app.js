@@ -124,7 +124,9 @@ function renderCams(cams) {
     const c = cams[Number(card.dataset.i)];
     if (!c) return;
     const s = card.querySelector(".cam-state");
-    const rate = c.fps ? ` · ${Math.round(c.fps)} FPS` : "";
+    // Verwendete Bildrate; liefert die Kamera deutlich mehr, steht das in Klammern dabei
+    const more = c.camera_fps && c.camera_fps > c.fps * 1.3 ? ` (Kamera liefert ${Math.round(c.camera_fps)})` : "";
+    const rate = c.fps ? ` · ${Math.round(c.fps)} FPS${more}` : "";
     if (!c.ok) {
       s.className = "cam-state bad";
       s.textContent = c.error || "kein Bild";
