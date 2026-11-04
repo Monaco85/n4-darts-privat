@@ -115,6 +115,22 @@ def test_commands(server):
     assert data["running"] is True and data["status"] == "Throw"
 
 
+def test_autocalibrate_rotate_and_fps(server):
+    _, base, _ = server
+    _, r = http(base, "POST", "/hd/autocalibrate", {"cam": 0})
+    assert r["ok"] and r["rotation_source"] == "vorher"
+    _, all_r = http(base, "POST", "/hd/autocalibrate", {})
+    assert len(all_r["results"]) == 3 and all(x["ok"] for x in all_r["results"])
+    assert http(base, "POST", "/hd/calibration/rotate", {"cam": 0, "steps": 1})[0] == 200
+    assert http(base, "POST", "/hd/calibration/rotate", {"cam": 0, "steps": -1})[0] == 200
+    assert http(base, "POST", "/hd/fps", {"fps": 50})[1]["fps"] == 30     # begrenzt
+    assert http(base, "POST", "/hd/fps", {"fps": 2})[1]["fps"] == 5
+    assert http(base, "POST", "/hd/fps", {"fps": 12})[1]["fps"] == 12
+    status = http(base, "GET", "/hd/status")[1]
+    assert status["fps"]["value"] == 12 and status["fps"]["min"] == 5 and status["fps"]["max"] == 30
+    assert status["cameras"][0]["autocal"]["rotation_source"] == "klick"
+
+
 def test_setup_page_and_camera_image(server):
     _, base, _ = server
     with urllib.request.urlopen(base + "/", timeout=5) as r:

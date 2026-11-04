@@ -13,6 +13,7 @@ import numpy as np
 
 from . import board as B
 from .bridge import BoardBridge
+from .autocal import auto_calibrate, rotate_calibration, set_twenty
 from .calibration import Calibration, draw_overlay
 from .cameras import FrameSource, open_source, probe_cameras
 from .detector import DartDetector, DetectorConfig
@@ -20,9 +21,12 @@ from .detector import DartDetector, DetectorConfig
 DEFAULT_CONFIG = {
     "cameras": [{"source": "sim:0"}, {"source": "sim:1"}, {"source": "sim:2"}],
     "resolution": [1280, 720],
-    "fps": 12,
+    "fps": 15,
     "detector": DetectorConfig().to_dict(),
 }
+
+
+FPS_MIN, FPS_MAX = 5, 30
 
 
 class HeimDarts:
@@ -42,6 +46,9 @@ class HeimDarts:
         self._frames: list[np.ndarray | None] = []
         self._stop = threading.Event()
         self._busy = False
+        self.autocal_results: dict[int, dict] = {}
+        self._autocal_tried: set[int] = set()
+        self._loop_rate = 0.0
         self._apply_cameras(self.config["cameras"])
         self._thread = threading.Thread(target=self._loop, name="erkennung", daemon=True)
         self._thread.start()
@@ -81,7 +88,7 @@ class HeimDarts:
             for s in self.sources:
                 s.close()
             w, h = self.config.get("resolution", [1280, 720])
-            self.sources = [open_source(c["source"], self.scene, int(w), int(h)) for c in cams]
+            self.sources = [open_source(c["source"], self.scene, int(w), int(h), self.fps) for c in cams]
             self.calibrations = []
             for c in cams:
                 cal = None
@@ -98,7 +105,10 @@ class HeimDarts:
                     self._calibrate_sim(i)
             self.detector = DartDetector(len(self.sources), list(self.calibrations),
                                          DetectorConfig.from_dict(self.config.get("detector")))
+            self._apply_timing()
             self._frames = [None] * len(self.sources)
+            self.autocal_results = {}
+            self._autocal_tried = set()
 
     def set_sources(self, specs: list[str]) -> None:
         specs = [s.strip() for s in specs if s.strip()]
@@ -123,6 +133,27 @@ class HeimDarts:
             self.detector.config = cfg
             self.save()
 
+    @property
+    def fps(self) -> int:
+        return int(min(FPS_MAX, max(FPS_MIN, int(self.config.get("fps", 15)))))
+
+    def set_fps(self, fps: int) -> int:
+        fps = int(min(FPS_MAX, max(FPS_MIN, int(fps))))
+        with self.lock:
+            self.config["fps"] = fps
+            for s in self.sources:
+                s.set_fps(fps)
+            self._apply_timing()
+            self.save()
+        self._log("info", f"Bildrate auf {fps} FPS gestellt")
+        return fps
+
+    def _apply_timing(self) -> None:
+        """Wartezeiten der Erkennung in Sekunden festhalten, unabhängig von der Bildrate."""
+        cfg = self.detector.config
+        cfg.stable_ticks = max(2, round(0.25 * self.fps))
+        cfg.hand_min_ticks = max(3, round(0.33 * self.fps))
+
     # ------------------------------------------------------------ Kalibrierung
     def frame_size(self, i: int) -> tuple[int, int]:
         f = self._frames[i] if i < len(self._frames) else None
@@ -139,7 +170,8 @@ class HeimDarts:
             self.calibrations[i] = cal
             self.detector.set_calibration(i, cal)
             self.save()
-        self._log("info", f"Kamera {i + 1} kalibriert (Abweichung {cal.reprojection_error:.1f} px)")
+        self.autocal_results.pop(i, None)
+        self._log("info", f"Kamera {i + 1} von Hand kalibriert (Abweichung {cal.reprojection_error:.1f} px)")
         return cal
 
     def clear_calibration(self, i: int) -> None:
@@ -147,6 +179,57 @@ class HeimDarts:
             self.calibrations[i] = None
             self.detector.set_calibration(i, None)
             self.save()
+        self.autocal_results.pop(i, None)
+        self._autocal_tried.add(i)   # nach bewusstem Löschen nicht sofort wieder automatisch
+
+    def _set_calibration(self, i: int, cal: Calibration) -> None:
+        with self.lock:
+            self.calibrations[i] = cal
+            self.detector.set_calibration(i, cal)
+            self.save()
+
+    def autocalibrate(self, i: int) -> dict:
+        """Findet die Scheibe automatisch. Behält die alte Kalibrierung, wenn es nicht klappt."""
+        if not 0 <= i < len(self.sources):
+            raise ValueError("Diese Kamera gibt es nicht")
+        f = self._frames[i] if i < len(self._frames) and self._frames[i] is not None else self.sources[i].read()
+        if f is None:
+            res = {"ok": False, "message": "Kamera liefert gerade kein Bild"}
+        else:
+            r = auto_calibrate(f, self.calibrations[i])
+            res = r.to_dict()
+            if r.ok and r.calibration is not None:
+                self._set_calibration(i, r.calibration)
+        res["needs_twenty"] = bool(res.get("ok")) and res.get("rotation_source") == "unsicher"
+        self.autocal_results[i] = res
+        self._log("info" if res["ok"] else "warnung", f"Kamera {i + 1}: {res['message']}")
+        return res
+
+    def autocalibrate_all(self) -> list[dict]:
+        return [self.autocalibrate(i) for i in range(len(self.sources))]
+
+    def rotate(self, i: int, steps: int) -> None:
+        cal = self.calibrations[i]
+        if cal is None:
+            raise ValueError("Kamera ist noch nicht kalibriert")
+        self._set_calibration(i, rotate_calibration(cal, int(steps)))
+        self._mark_rotation_set(i)
+
+    def twenty(self, i: int, x: float, y: float) -> None:
+        cal = self.calibrations[i]
+        if cal is None:
+            raise ValueError("Kamera ist noch nicht kalibriert")
+        self._set_calibration(i, set_twenty(cal, float(x), float(y)))
+        self._mark_rotation_set(i)
+        self._log("info", f"Kamera {i + 1}: Lage der 20 per Klick festgelegt")
+
+    def _mark_rotation_set(self, i: int) -> None:
+        r = self.autocal_results.get(i)
+        if r:
+            r["needs_twenty"] = False
+            r["rotation_source"] = "klick"
+            if r.get("ok"):
+                r["message"] = r["message"].split(". ")[0] + ". Lage der 20 festgelegt."
 
     def _calibrate_sim(self, i: int) -> None:
         spec = self.config["cameras"][i]["source"]
@@ -187,6 +270,11 @@ class HeimDarts:
                     detector = self.detector
                 frames = [s.read() for s in sources]
                 self._frames = frames
+                for i, f in enumerate(frames):
+                    if f is not None and i < len(self.calibrations) and self.calibrations[i] is None \
+                            and i not in self._autocal_tried:
+                        self._autocal_tried.add(i)   # einmal von selbst versuchen
+                        threading.Thread(target=self.autocalibrate, args=(i,), daemon=True).start()
                 self.bridge.set_connected(any(f is not None for f in frames))
                 running = self.bridge.running and self.bridge.status not in ("Calibrating",)
                 if running and not was_running:
@@ -203,8 +291,9 @@ class HeimDarts:
             except Exception as e:  # noqa: BLE001 – Schleife darf nie sterben
                 self._log("fehler", f"Erkennung: {e!r}")
                 time.sleep(0.5)
-            fps = max(2, int(self.config.get("fps", 12)))
-            self._stop.wait(max(0.0, 1.0 / fps - (time.time() - t0)))
+            self._stop.wait(max(0.0, 1.0 / self.fps - (time.time() - t0)))
+            dt = max(1e-3, time.time() - t0)
+            self._loop_rate = 0.9 * self._loop_rate + 0.1 / dt if self._loop_rate else 1.0 / dt
 
     def _handle(self, ev: dict) -> None:
         if ev["type"] == "dart":
@@ -235,12 +324,16 @@ class HeimDarts:
         self._log("info", "Referenzbild der leeren Scheibe neu aufgenommen")
 
     def remote_calibrate(self) -> None:
-        """Von n4-darts („Kalibrieren“ im Board-Menü): Referenzbild neu aufnehmen."""
+        """Von n4-darts („Kalibrieren“ im Board-Menü): alle Kameras automatisch kalibrieren und
+        die leere Scheibe neu aufnehmen."""
         self.bridge.calibrating()
-        self.detector.reset()
-        time.sleep(1.0)
-        self.bridge.calibrated()
-        self._log("info", "Kalibrieren über n4-darts: Referenzbild neu aufgenommen")
+        try:
+            results = self.autocalibrate_all()
+            self.detector.reset()
+            ok = sum(1 for r in results if r.get("ok"))
+            self._log("info", f"Kalibrieren über n4-darts: {ok} von {len(results)} Kameras automatisch kalibriert")
+        finally:
+            self.bridge.calibrated()
 
     def probe(self) -> list[dict]:
         in_use = {int(c["source"]) for c in self.config["cameras"] if c["source"].strip().isdigit()}
@@ -287,6 +380,7 @@ class HeimDarts:
                 info["calibrated"] = cal is not None
                 info["calibration_error"] = round(cal.reprojection_error, 2) if cal else None
                 info["calibration_points"] = cal.image_points if cal else None
+                info["autocal"] = self.autocal_results.get(i)
                 cams.append(info)
             st = self.detector.status
             return {
@@ -295,6 +389,7 @@ class HeimDarts:
                 "detector": {"state": st.state, "message": st.message, "darts_on_board": st.darts_on_board},
                 "cameras": cams,
                 "settings": self.detector.config.to_dict(),
+                "fps": {"value": self.fps, "min": FPS_MIN, "max": FPS_MAX, "loop": round(self._loop_rate, 1)},
                 "sim": self.has_sim,
                 "log": list(self.log)[:20],
                 "calibration_points": [{"name": n, "x": p[0], "y": p[1]} for n, p in B.CALIBRATION_POINTS],

@@ -59,7 +59,7 @@ function drawBoard(svg) {
 
 // ------------------------------------------------------------------ Scheibe mit Darts
 const boardSvg = $("board");
-let boardMarks = drawBoard(boardSvg);
+const boardMarks = drawBoard(boardSvg);
 
 boardSvg.addEventListener("click", async (e) => {
   if (!status?.sim) return;
@@ -91,6 +91,16 @@ function renderVisit(board) {
 }
 
 // ------------------------------------------------------------------ Kameras
+async function autocal(i) {
+  try {
+    const r = await api("/hd/autocalibrate", { cam: i });
+    if (r.ok && r.needs_twenty) openCalibration(i);
+    return r;
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 function renderCams(cams) {
   const debug = $("chk-debug").checked ? 1 : 0;
   const key = cams.map((c) => c.spec).join("|") + `#${debug}`;
@@ -99,31 +109,51 @@ function renderCams(cams) {
     camKey = key;
     box.replaceChildren();
     cams.forEach((c, i) => {
-      const card = el("div", { class: "cam" }, box);
+      const card = el("div", { class: "cam", "data-i": i }, box);
       el("img", { src: `/hd/camera/${i}/stream?overlay=1&debug=${debug}`, alt: `Kamera ${i + 1}` }, card);
       const info = el("div", { class: "cam-info" }, card);
       el("span", { class: "cam-name", text: `Kamera ${i + 1} · ${c.spec}` }, info);
-      el("span", { class: "cam-state", "data-i": i }, info);
-      const btn = el("button", { text: "Kalibrieren" }, info);
-      btn.addEventListener("click", () => openCalibration(i));
+      el("span", { class: "cam-state" }, info);
+      const actions = el("div", { class: "cam-actions" }, info);
+      el("button", { class: "accent", text: "Auto" }, actions).addEventListener("click", () => autocal(i));
+      el("button", { text: "Kalibrieren …" }, actions).addEventListener("click", () => openCalibration(i));
+      el("div", { class: "cam-note" }, card);
     });
   }
-  box.querySelectorAll(".cam-state").forEach((s) => {
-    const c = cams[Number(s.dataset.i)];
+  box.querySelectorAll(".cam").forEach((card) => {
+    const c = cams[Number(card.dataset.i)];
     if (!c) return;
+    const s = card.querySelector(".cam-state");
+    const rate = c.fps ? ` · ${Math.round(c.fps)} FPS` : "";
     if (!c.ok) {
       s.className = "cam-state bad";
       s.textContent = c.error || "kein Bild";
     } else if (!c.calibrated) {
       s.className = "cam-state warn";
-      s.textContent = `${c.width}×${c.height} · nicht kalibriert`;
+      s.textContent = `${c.width}×${c.height}${rate} · nicht kalibriert`;
     } else {
       s.className = "cam-state ok";
-      s.textContent = `${c.width}×${c.height} · kalibriert (±${c.calibration_error} px)`;
+      s.textContent = `${c.width}×${c.height}${rate} · kalibriert`;
     }
+    const note = card.querySelector(".cam-note");
+    const a = c.autocal;
+    note.className = `cam-note${a && !a.ok ? " bad" : a?.needs_twenty ? " warn" : ""}`;
+    note.textContent = a ? a.message : "";
   });
 }
 $("chk-debug").addEventListener("change", () => status && renderCams(status.cameras));
+$("btn-autocal-all").addEventListener("click", async (e) => {
+  e.target.disabled = true;
+  try {
+    const { results } = await api("/hd/autocalibrate", {});
+    const first = results.findIndex((r) => r.ok && r.needs_twenty);
+    if (first >= 0) openCalibration(first);
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    e.target.disabled = false;
+  }
+});
 
 // ------------------------------------------------------------------ Status
 function setPill(id, text, cls) {
@@ -151,6 +181,9 @@ function render(s) {
     $("sources").value = s.cameras.map((c) => c.spec).join("\n");
   }
   syncSliders(s.settings);
+  if (document.activeElement !== $("set-fps")) $("set-fps").value = s.fps.value;
+  $("val-fps").textContent = `${document.activeElement === $("set-fps") ? $("set-fps").value : s.fps.value} FPS (Erkennung läuft mit ${Math.round(s.fps.loop)})`;
+  if ($("cal-dialog").open) renderCalSide();
 
   const log = $("log");
   log.replaceChildren();
@@ -221,31 +254,63 @@ for (const s of sliders) {
     sliderTimer = setTimeout(() => api("/hd/settings", { detector: Object.fromEntries(sliders.map((x) => [x.key, x.fromUi($(x.id).value)])) }), 300);
   });
 }
+let fpsTimer;
+$("set-fps").addEventListener("input", () => {
+  $("val-fps").textContent = `${$("set-fps").value} FPS`;
+  clearTimeout(fpsTimer);
+  fpsTimer = setTimeout(() => api("/hd/fps", { fps: Number($("set-fps").value) }), 300);
+});
 
 // ------------------------------------------------------------------ Kalibrierung
-const cal = { cam: 0, points: [] };
+// Zwei Arten: "auto" (Standbild mit eingeblendetem Gitter, ein Klick ins Feld der 20 legt die
+// Drehung fest) und "hand" (fünf Punkte genau anklicken).
+const cal = { cam: 0, mode: "auto", points: [] };
 const calImg = $("cal-img"), calMarks = $("cal-marks"), loupe = $("cal-loupe");
 const miniMarks = drawBoard($("cal-mini"));
 
 function openCalibration(i) {
   cal.cam = i;
   cal.points = [];
+  setMode("auto");
   $("cal-title").textContent = `Kamera ${i + 1} kalibrieren`;
+  $("cal-msg").textContent = "";
+  if (!$("cal-dialog").open) $("cal-dialog").showModal();
+}
+
+function setMode(mode) {
+  cal.mode = mode;
+  cal.points = [];
+  $("cal-auto").hidden = mode !== "auto";
+  $("cal-hand").hidden = mode !== "hand";
   $("cal-msg").textContent = "";
   loadSnapshot();
   renderCal();
-  $("cal-dialog").showModal();
 }
 
 function loadSnapshot() {
-  calImg.src = `/hd/camera/${cal.cam}.jpg?overlay=0&t=${Date.now()}`;
+  const overlay = cal.mode === "auto" ? 1 : 0;
+  calImg.src = `/hd/camera/${cal.cam}.jpg?overlay=${overlay}&t=${Date.now()}`;
 }
 calImg.addEventListener("load", () => {
   calMarks.setAttribute("viewBox", `0 0 ${calImg.naturalWidth} ${calImg.naturalHeight}`);
   renderCal();
 });
 
+function renderCalSide() {
+  const c = status?.cameras?.[cal.cam];
+  const a = c?.autocal;
+  let text = "Noch nicht automatisch erkannt.";
+  if (a) text = a.message;
+  else if (c?.calibrated) text = "Kalibriert. Liegt das gelbe Gitter auf der Scheibe?";
+  $("cal-result").textContent = text;
+  $("cal-rot-left").disabled = !c?.calibrated;
+  $("cal-rot-right").disabled = !c?.calibrated;
+}
+
 function renderCal() {
+  renderCalSide();
+  calMarks.replaceChildren();
+  if (cal.mode !== "hand") return;
   const names = status?.calibration_points || [];
   const k = cal.points.length;
   $("cal-step").textContent = k < names.length ? `Punkt ${k + 1} von ${names.length}: ${names[k].name}` : "Alle Punkte gesetzt – speichern.";
@@ -255,7 +320,6 @@ function renderCal() {
   names.forEach((p, j) => {
     el("circle", { cx: p.x, cy: -p.y, r: j === k ? 12 : 7, fill: j < k ? "#5cffa0" : j === k ? "#a68cff" : "#3a3f44", stroke: "#060708", "stroke-width": 2 }, miniMarks);
   });
-  calMarks.replaceChildren();
   const size = Math.max(6, (calImg.naturalWidth || 1280) / 160);
   cal.points.forEach(([x, y], j) => {
     el("circle", { cx: x, cy: y, r: size, fill: "none", stroke: "#5cffa0", "stroke-width": size / 3 }, calMarks);
@@ -268,13 +332,29 @@ function imagePoint(e) {
   return [((e.clientX - r.left) / r.width) * calImg.naturalWidth, ((e.clientY - r.top) / r.height) * calImg.naturalHeight];
 }
 
-calImg.addEventListener("click", (e) => {
+calImg.addEventListener("click", async (e) => {
+  const [x, y] = imagePoint(e);
+  if (cal.mode === "auto") {
+    if (!status?.cameras?.[cal.cam]?.calibrated) {
+      $("cal-msg").textContent = "Erst „Automatisch erkennen“ drücken.";
+      return;
+    }
+    try {
+      await api("/hd/calibration/twenty", { cam: cal.cam, x, y });
+      $("cal-msg").textContent = "Lage der 20 übernommen.";
+      loadSnapshot();
+    } catch (err) {
+      $("cal-msg").textContent = err.message;
+    }
+    return;
+  }
   const n = status?.calibration_points?.length || 5;
   if (cal.points.length >= n) return;
-  cal.points.push(imagePoint(e));
+  cal.points.push([x, y]);
   renderCal();
 });
 calImg.addEventListener("mousemove", (e) => {
+  if (cal.mode !== "hand") return;
   const [x, y] = imagePoint(e);
   const r = calImg.getBoundingClientRect();
   loupe.hidden = false;
@@ -292,6 +372,24 @@ calImg.addEventListener("mousemove", (e) => {
 });
 calImg.addEventListener("mouseleave", () => (loupe.hidden = true));
 
+$("cal-run").addEventListener("click", async () => {
+  $("cal-msg").textContent = "Suche die Scheibe …";
+  const r = await autocal(cal.cam);
+  $("cal-msg").textContent = r ? (r.ok ? "" : "Nicht gefunden – siehe oben.") : "";
+  loadSnapshot();
+});
+const rotate = async (steps) => {
+  try {
+    await api("/hd/calibration/rotate", { cam: cal.cam, steps });
+    loadSnapshot();
+  } catch (err) {
+    $("cal-msg").textContent = err.message;
+  }
+};
+$("cal-rot-left").addEventListener("click", () => rotate(1));
+$("cal-rot-right").addEventListener("click", () => rotate(-1));
+$("cal-to-hand").addEventListener("click", () => setMode("hand"));
+$("cal-to-auto").addEventListener("click", () => setMode("auto"));
 $("cal-undo").addEventListener("click", () => { cal.points.pop(); renderCal(); });
 $("cal-refresh").addEventListener("click", loadSnapshot);
 $("cal-close").addEventListener("click", () => $("cal-dialog").close());
@@ -299,7 +397,7 @@ $("cal-save").addEventListener("click", async () => {
   try {
     const r = await api("/hd/calibrate", { cam: cal.cam, points: cal.points });
     $("cal-msg").textContent = `Gespeichert. Abweichung ±${r.error_px} px.`;
-    setTimeout(() => $("cal-dialog").close(), 900);
+    setTimeout(() => setMode("auto"), 900);
   } catch (err) {
     $("cal-msg").textContent = err.message;
   }
@@ -307,6 +405,7 @@ $("cal-save").addEventListener("click", async () => {
 $("cal-clear").addEventListener("click", async () => {
   await api("/hd/calibration/clear", { cam: cal.cam });
   $("cal-msg").textContent = "Kalibrierung gelöscht.";
+  loadSnapshot();
 });
 
 poll();
