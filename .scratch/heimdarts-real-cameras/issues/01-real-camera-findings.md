@@ -32,4 +32,17 @@ Zwischendurch kam ein falsches „S8“: HeimDarts war mit Darts in der Scheibe 
 4. **Neustart mit Darts in der Scheibe** verdirbt die leere Scheibe. Beim Start nicht blind das erste Bild als leer nehmen (z. B. gespeicherte leere Scheibe laden oder vor dem ersten Wurf um „Darts ziehen“ bitten).
 5. Danach Empfindlichkeit, kleinsten/größten Dart an echten Würfen einstellen und die Aufnahmen als Testfälle in `tests/` übernehmen.
 
-Zum Weitermachen: Darts ziehen, „Leere Scheibe neu aufnehmen“, dann werfen; die Aufnahmen in `tools/heimdarts/data/aufnahmen` zeigen pro Kamera, was erkannt wurde.
+## Lokaler Stand auf dem Dart-PC (nicht im Repo)
+
+- Repo unter `C:\Users\Dart\n4-darts-privat`, Branch `claude/changes` (PR #4). Git-Autor nur für dieses Repo gesetzt: `Monaco85`, `zunker.sebastian@gmail.com`.
+- Python 3.12 per winget (nur für den Benutzer), HeimDarts-Umgebung unter `%USERPROFILE%\Tools\heimdarts-venv` mit numpy, OpenCV und pytest.
+- `tools/heimdarts/data/config.json`: Kameras `0`, `1`, `2`, Auflösung 640×480, 15 Bilder/s, Kalibrierung mit gesetzter 20 für alle drei Kameras. Die alte Einstellung (1280×720) liegt daneben als `config-1280x720.bak.json`.
+- `tools/heimdarts/data/aufnahmen`: die Aufnahmen der Würfe vom 2026-11-04 (S6, S1, D9 und das falsche S8).
+- HeimDarts ist beendet, die Kameras sind frei.
+
+## Weitermachen
+
+1. `tools/heimdarts/start-heimdarts.cmd` starten, Einrichtungsseite <http://localhost:3180/>. Autodarts muss geschlossen sein.
+2. Darts ziehen, „Leere Scheibe neu aufnehmen“, erst dann werfen (siehe Punkt 4 oben).
+3. Pro Wurf die echten Felder in Wurfreihenfolge notieren und mit den Aufnahmen in `tools/heimdarts/data/aufnahmen` vergleichen: Sie zeigen pro Kamera, was erkannt wurde.
+4. Mit Punkt 1 der offenen Liste (Belichtung) anfangen.
