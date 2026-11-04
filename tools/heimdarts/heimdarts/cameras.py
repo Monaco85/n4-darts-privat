@@ -11,6 +11,7 @@ import os
 import sys
 import threading
 import time
+from collections import deque
 
 import cv2
 import numpy as np
@@ -50,7 +51,8 @@ class OpenCVSource(FrameSource):
         self._error: str | None = None
         self._size = (0, 0)
         self._last_ok = 0.0
-        self._rate = 0.0
+        self._used: deque[float] = deque(maxlen=200)      # Zeitpunkte verwendeter Bilder
+        self._grabbed: deque[float] = deque(maxlen=600)   # Zeitpunkte aller gelieferten Bilder
         self._thread = threading.Thread(target=self._run, name=f"kamera-{spec}", daemon=True)
         self._thread.start()
 
@@ -89,7 +91,7 @@ class OpenCVSource(FrameSource):
             file_fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
             self._error = None
             fails = 0
-            next_due = 0.0
+            last_used = -1e9
             while not self._stop.is_set():
                 if self._fps_changed and not is_file:
                     self._fps_changed = False
@@ -105,22 +107,22 @@ class OpenCVSource(FrameSource):
                     time.sleep(0.03)
                     continue
                 fails = 0
-                now = time.time()
+                now = time.perf_counter()
+                self._grabbed.append(now)
                 period = 1.0 / max(1.0, self.fps)
-                if now < next_due - 0.3 * period and not is_file:
-                    continue                      # Bild verwerfen, ohne es umzuwandeln
-                # Takt halten (kleines Zittern der Kamera ausgleichen), nach Hängern neu ansetzen
-                next_due = next_due + period if now - next_due < period else now + period
+                # Nie schneller als eingestellt: Bilder dazwischen verwerfen, ohne sie umzuwandeln.
+                # (5 % Spielraum, damit z. B. bei 30-FPS-Kamera und 15 FPS jedes zweite Bild passt.)
+                if not is_file and now - last_used < 0.95 * period:
+                    continue
                 ok, frame = cap.retrieve()
                 if not ok:
                     continue
+                last_used = now
+                self._used.append(now)
                 with self._lock:
-                    if self._last_ok:
-                        dt = max(1e-3, now - self._last_ok)
-                        self._rate = 0.9 * self._rate + 0.1 * (1.0 / dt) if self._rate else 1.0 / dt
                     self._frame = frame
                     self._size = (frame.shape[1], frame.shape[0])
-                    self._last_ok = now
+                    self._last_ok = time.time()
                 if is_file:
                     time.sleep(1.0 / max(1.0, min(file_fps, self.fps, 60.0)))
             cap.release()
@@ -131,10 +133,20 @@ class OpenCVSource(FrameSource):
                 return None
             return self._frame
 
+    @staticmethod
+    def _rate(stamps: deque, window: float = 2.0) -> float:
+        """Bilder pro Sekunde in den letzten `window` Sekunden."""
+        now = time.perf_counter()
+        recent = [t for t in list(stamps) if now - t <= window]
+        if len(recent) < 2:
+            return 0.0
+        return (len(recent) - 1) / max(1e-6, recent[-1] - recent[0])
+
     def info(self) -> dict:
         ok = self.read() is not None
         return {"spec": self.spec, "ok": ok, "width": self._size[0], "height": self._size[1],
-                "fps": round(self._rate, 1) if ok else 0.0,
+                "fps": round(self._rate(self._used), 1) if ok else 0.0,
+                "camera_fps": round(self._rate(self._grabbed), 1) if ok else 0.0,
                 "error": None if ok else (self._error or "Warte auf Bilder …")}
 
     def close(self) -> None:
