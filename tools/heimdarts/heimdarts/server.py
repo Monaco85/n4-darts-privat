@@ -20,7 +20,7 @@ API_VERSION = "2.0.2-heimdarts"
 def make_handler(app: HeimDarts):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
-        server_version = "HeimDarts/0.2"
+        server_version = "HeimDarts/0.3"
 
         def log_message(self, fmt, *args):  # ruhig bleiben
             pass
