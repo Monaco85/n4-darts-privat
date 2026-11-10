@@ -135,6 +135,9 @@ function renderCams(cams) {
       s.className = "cam-state ok";
       s.textContent = `${c.width}×${c.height}${rate} · kalibriert`;
     }
+    if (c.ok && c.exposure) {
+      s.title = `Belichtung: ${c.exposure}`;
+    }
     const note = card.querySelector(".cam-note");
     const a = c.autocal;
     note.className = `cam-note${a && !a.ok ? " bad" : a?.needs_twenty ? " warn" : ""}`;
@@ -182,6 +185,7 @@ function render(s) {
   }
   syncSliders(s.settings);
   if (document.activeElement !== $("set-fps")) $("set-fps").value = s.fps.value;
+  $("chk-exposure").checked = !!s.lock_exposure;
   $("val-fps").textContent = `${document.activeElement === $("set-fps") ? $("set-fps").value : s.fps.value} FPS (Erkennung läuft mit ${Math.round(s.fps.loop)})`;
   if ($("cal-dialog").open) renderCalSide();
 
@@ -255,6 +259,7 @@ for (const s of sliders) {
   });
 }
 let fpsTimer;
+$("chk-exposure").addEventListener("change", (e) => api("/hd/exposure", { lock: e.target.checked }));
 $("set-fps").addEventListener("input", () => {
   $("val-fps").textContent = `${$("set-fps").value} FPS`;
   clearTimeout(fpsTimer);

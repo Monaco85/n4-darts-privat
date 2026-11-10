@@ -82,6 +82,9 @@ class SimScene:
         self.cameras = cameras or default_cameras()
         self.rng = np.random.default_rng(seed)
         self.noise = noise
+        self.gain = 1.0          # Gesamthelligkeit (Belichtungsautomatik nachahmen)
+        self.shadows = False     # Schatten der Darts auf der Scheibe zeichnen
+        self.light = np.array([0.3, -0.45, -1.0])   # Lichtrichtung (zur Scheibe hin)
         self.darts: list[SimDart] = []
         self.hand: tuple[float, float, float] | None = None
         self.version = 0
@@ -144,6 +147,19 @@ class SimScene:
             darts = list(self.darts)
             hand = self.hand
         img = self._backgrounds[i].copy()
+        if self.shadows:
+            shade = np.zeros(img.shape[:2], np.uint8)
+            for d in darts:
+                tip = np.array([d.x, d.y, 0.0])
+                ts = np.linspace(0, 135, 12)
+                pts3 = tip[None, :] + ts[:, None] * d.direction[None, :]
+                flat = pts3 - (pts3[:, 2:3] / self.light[2]) * self.light[None, :]
+                P, depth = cam.project(flat)
+                if (depth > 1).all():
+                    th = max(2, int(round(8 * cam.focal / depth.mean())))
+                    cv2.polylines(shade, [P.astype(np.int32)], False, 255, th, cv2.LINE_AA)
+            shade = cv2.GaussianBlur(shade, (7, 7), 0).astype(np.float32) / 255.0
+            img = (img.astype(np.float32) * (1.0 - 0.3 * shade[..., None])).astype(np.uint8)
         prims = []  # (Tiefe, Zeichenfunktion)
         for d in darts:
             tip = np.array([d.x, d.y, 0.0])
@@ -177,6 +193,8 @@ class SimScene:
                 cv2.fillConvexPoly(img, P.astype(np.int32), col, cv2.LINE_AA)
             else:
                 cv2.circle(img, (int(P[0][0]), int(P[0][1])), th, col, -1, cv2.LINE_AA)
+        if self.gain != 1.0:
+            img = cv2.convertScaleAbs(img, alpha=self.gain)
         if noise and self.noise > 0:
             n = np.empty(img.shape, np.int16)
             cv2.randn(n, 0, self.noise)

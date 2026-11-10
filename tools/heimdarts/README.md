@@ -48,6 +48,9 @@ Autodarts muss auch geschlossen sein, damit HeimDarts die Kameras öffnen kann.
 4. **Bildrate:** Unter *Einstellungen* zwischen 5 und 30 Bildern pro Sekunde einstellbar (Standard 15).
    Weniger Bilder = weniger Last für den PC; 10–15 reichen zum Spielen. Die Wartezeiten der Erkennung
    (ruhiges Bild, Hand) gelten in Sekunden und passen sich der Bildrate an.
+   **Auflösung:** `"resolution": [640, 480]` in `data/config.json` (Standard 1280×720). Bei drei Kameras
+   mit 15 Bildern/s kostet allein das Abholen der Bilder etwa 1 CPU-Kern bei 1280×720, 0,6 bei 848×480
+   und 0,4 bei 640×480. Nach einer Änderung kalibriert HeimDarts die Kameras von selbst neu.
 5. **Prüfen:** „Erkennung einblenden“ anhaken und ein paar Darts werfen. Der rote Fleck ist der
    erkannte Dart, die türkise Linie seine Achse, der grüne Kreis die Spitze.
 
@@ -81,8 +84,12 @@ Kamera wird die sichtbare Spitze genommen – das ist deutlich ungenauer.
 
 - Die Autokalibrierung braucht eine normale Steeldartscheibe mit roten und grünen Ringen und Licht, bei
   dem die Farben kräftig erscheinen. Klappt es nicht, sagt die Meldung unter der Kamera warum.
-- Getestet ist alles mit simulierten Kameras. Mit den echten Kameras müssen sehr wahrscheinlich die
-  Regler nachgestellt werden (Empfindlichkeit, kleinster/größter Dart).
+- Mit echten Kameras erst kurz getestet (drei USB-Kameras, 640×480, siehe
+  `.scratch/heimdarts-real-cameras`). Offen: automatische Belichtung der Kameras kann einen Dart
+  verderben, und eine Kamera, die nur den Flight sieht, verfälscht den Schnittpunkt. Die Regler
+  (Empfindlichkeit, kleinster/größter Dart) sind noch nicht an echten Würfen eingestellt.
+- Für die Fehlersuche speichert HeimDarts pro Dart die Bilder vorher/nachher und was jede Kamera
+  erkannt hat in `data/aufnahmen` (die letzten 60; abschalten mit `"record_darts": false`).
 - Linsenverzerrung von Weitwinkelkameras wird nicht ausgeglichen; am Rand der Scheibe kann das ein
   paar Millimeter kosten.
 - Starke Schatten können als Teil des Darts erkannt werden. Gleichmäßiges Licht (LED-Ring) hilft.

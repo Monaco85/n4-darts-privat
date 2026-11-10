@@ -20,7 +20,7 @@ API_VERSION = "2.0.2-heimdarts"
 def make_handler(app: HeimDarts):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
-        server_version = "HeimDarts/0.2"
+        server_version = "HeimDarts/0.3"
 
         def log_message(self, fmt, *args):  # ruhig bleiben
             pass
@@ -132,6 +132,9 @@ def make_handler(app: HeimDarts):
                     return self._json({"ok": True})
                 if path == "/hd/calibration/twenty":
                     app.twenty(int(body["cam"]), float(body["x"]), float(body["y"]))
+                    return self._json({"ok": True})
+                if path == "/hd/exposure":
+                    app.set_lock_exposure(bool(body.get("lock")))
                     return self._json({"ok": True})
                 if path == "/hd/fps":
                     return self._json({"fps": app.set_fps(int(body["fps"]))})
