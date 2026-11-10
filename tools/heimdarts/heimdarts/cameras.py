@@ -40,8 +40,11 @@ class OpenCVSource(FrameSource):
     sie um, wie eingestellt sind.
     """
 
-    def __init__(self, spec: str, width: int = 1280, height: int = 720, fps: float = 15.0):
+    def __init__(self, spec: str, width: int = 1280, height: int = 720, fps: float = 15.0,
+                 lock_exposure: bool = False):
         self.spec = spec
+        self.lock_exposure = lock_exposure
+        self.exposure = "automatisch"
         self.want = (width, height)
         self.fps = float(fps)
         self._fps_changed = False
@@ -91,6 +94,10 @@ class OpenCVSource(FrameSource):
             self._error = None
             fails = 0
             next_due = 0.0
+            opened_at = time.time()
+            lock_step = "warten" if (self.lock_exposure and not is_file) else "aus"
+            mean_before = 0.0
+            check_at = 0.0
             while not self._stop.is_set():
                 if self._fps_changed and not is_file:
                     self._fps_changed = False
@@ -127,9 +134,47 @@ class OpenCVSource(FrameSource):
                     self._frame = frame
                     self._size = (frame.shape[1], frame.shape[0])
                     self._last_ok = now
+                if lock_step == "warten" and now - opened_at >= 3.0:
+                    # Die Automatik hatte 3 s Zeit, sich einzustellen: diese Werte jetzt festhalten
+                    mean_before = float(frame.mean())
+                    lock_step, check_at = "prüfen", now + 1.5
+                    self.exposure = self._lock(cap)
+                elif lock_step == "prüfen" and now >= check_at:
+                    lock_step = "fertig"
+                    if float(frame.mean()) < 0.5 * mean_before:   # Bild viel dunkler: zurück zur Automatik
+                        self._unlock(cap)
+                        self.exposure = "automatisch (Festhalten ging nicht)"
                 if is_file:
                     time.sleep(1.0 / max(1.0, min(file_fps, self.fps, 60.0)))
             cap.release()
+
+    @staticmethod
+    def _lock(cap) -> str:
+        """Belichtung und Weißabgleich auf die aktuellen Werte festsetzen (soweit die Kamera es kann)."""
+        done = []
+        try:
+            e = cap.get(cv2.CAP_PROP_EXPOSURE)
+            cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)   # manuell (V4L-Konvention; DirectShow: != Auto)
+            if cap.set(cv2.CAP_PROP_EXPOSURE, e):
+                done.append(f"Belichtung {e:g}")
+        except cv2.error:
+            pass
+        try:
+            wb = cap.get(cv2.CAP_PROP_WB_TEMPERATURE)
+            cap.set(cv2.CAP_PROP_AUTO_WB, 0)
+            if wb > 0 and cap.set(cv2.CAP_PROP_WB_TEMPERATURE, wb):
+                done.append(f"Weißabgleich {wb:g} K")
+        except cv2.error:
+            pass
+        return "fest: " + ", ".join(done) if done else "automatisch (Kamera unterstützt Festhalten nicht)"
+
+    @staticmethod
+    def _unlock(cap) -> None:
+        try:
+            cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.75)
+            cap.set(cv2.CAP_PROP_AUTO_WB, 1)
+        except cv2.error:
+            pass
 
     def read(self) -> np.ndarray | None:
         with self._lock:
@@ -140,7 +185,7 @@ class OpenCVSource(FrameSource):
     def info(self) -> dict:
         ok = self.read() is not None
         return {"spec": self.spec, "ok": ok, "width": self._size[0], "height": self._size[1],
-                "fps": round(self._rate, 1) if ok else 0.0,
+                "fps": round(self._rate, 1) if ok else 0.0, "exposure": self.exposure,
                 "error": None if ok else (self._error or "Warte auf Bilder …")}
 
     def close(self) -> None:
@@ -167,12 +212,12 @@ class SimSource(FrameSource):
 
 
 def open_source(spec: str, scene_factory, width: int = 1280, height: int = 720,
-                fps: float = 15.0) -> FrameSource:
+                fps: float = 15.0, lock_exposure: bool = False) -> FrameSource:
     s = spec.strip()
     if s.lower().startswith("sim"):
         idx = int(s.split(":", 1)[1]) if ":" in s else 0
         return SimSource(s, scene_factory(), idx)
-    return OpenCVSource(s, width, height, fps)
+    return OpenCVSource(s, width, height, fps, lock_exposure)
 
 
 def probe_cameras(max_index: int = 6, skip: set[int] | None = None) -> list[dict]:

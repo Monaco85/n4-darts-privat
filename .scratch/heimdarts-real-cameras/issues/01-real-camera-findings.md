@@ -46,3 +46,17 @@ Zwischendurch kam ein falsches „S8“: HeimDarts war mit Darts in der Scheibe 
 2. Darts ziehen, „Leere Scheibe neu aufnehmen“, erst dann werfen (siehe Punkt 4 oben).
 3. Pro Wurf die echten Felder in Wurfreihenfolge notieren und mit den Aufnahmen in `tools/heimdarts/data/aufnahmen` vergleichen: Sie zeigen pro Kamera, was erkannt wurde.
 4. Mit Punkt 1 der offenen Liste (Belichtung) anfangen.
+
+## Umgesetzt am 2026-11-10 (Laptop, nur mit Simulation getestet)
+
+Zu den offenen Punkten 1–4 oben:
+
+1. **Belichtung:** `detector.match_brightness()` gleicht vor jedem Vergleich die Gesamthelligkeit an (Median der Helligkeitsverhältnisse pro Pixel, ein Dart verschiebt ihn nicht). Zusätzlich hält `cameras.py` 3 s nach dem Start Belichtung und Weißabgleich fest (Schalter auf der Einrichtungsseite, `"lock_exposure"`). Ob DirectShow das bei diesen Kameras befolgt, steht im Tooltip der Kamerazeile („Belichtung: fest …“); wird das Bild dabei viel dunkler, schaltet HeimDarts zurück auf automatisch.
+2. **Nur-Flight-Ansichten:** Für den Schnittpunkt zählen nur Flecken mit Elongation ≥ 3 und Länge ≥ 3 % der Bilddiagonale (`min_elongation`, `min_line_frac`). Passen drei Linien nicht zusammen, wird die verworfen, deren Weglassen den Schnittpunkt am besten zu den gesehenen Spitzen der übrigen Kameras passen lässt (vorher: die mit dem größten Abstand – das konnte die gute Kamera treffen).
+3. **Dünne Teile:** Statt Öffnen mit 3×3 (löscht alles unter 3 px Breite, bei 640×480 also Spitze und Schaft) werden nur noch Flecken unter 5 px entfernt (`min_blob_px`).
+4. **Schatten:** Wird ein Pixel auf der Scheibe nur dunkler (50–92 %) bei gleicher Farbe, gilt es als Schatten und nicht als Dart (`shadow_filter`). Nur innerhalb der Scheibe – davor sieht ein graues Barrel sonst selbst wie ein Schatten aus.
+5. **Neustart mit Darts:** Die leere Scheibe wird als `data/leer_kameraN.png` gespeichert und beim Start geladen. Steckt dann noch etwas, meldet HeimDarts „Darts in der Scheibe? Bitte ziehen“, das Ziehen wird erkannt, kein alter Dart zählt als neuer.
+
+Neue Tests: `tests/test_robustness.py` (Belichtungssprung 28 %, Schatten, Nur-Flight-Ansicht, falsche dritte Linie, dünne Linien, Neustart mit Darts). 55 Tests grün.
+
+**Am Dart-PC prüfen:** mit den Aufnahmen in `data/aufnahmen` und neuen Würfen – v. a. ob die Belichtung festgehalten wird und ob Doppel jetzt mit zwei Kameras erkannt werden.

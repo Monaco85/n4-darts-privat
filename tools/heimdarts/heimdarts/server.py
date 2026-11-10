@@ -133,6 +133,9 @@ def make_handler(app: HeimDarts):
                 if path == "/hd/calibration/twenty":
                     app.twenty(int(body["cam"]), float(body["x"]), float(body["y"]))
                     return self._json({"ok": True})
+                if path == "/hd/exposure":
+                    app.set_lock_exposure(bool(body.get("lock")))
+                    return self._json({"ok": True})
                 if path == "/hd/fps":
                     return self._json({"fps": app.set_fps(int(body["fps"]))})
                 if path == "/hd/reference":

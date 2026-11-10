@@ -88,7 +88,8 @@ class HeimDarts:
             for s in self.sources:
                 s.close()
             w, h = self.config.get("resolution", [1280, 720])
-            self.sources = [open_source(c["source"], self.scene, int(w), int(h), self.fps) for c in cams]
+            lock = bool(self.config.get("lock_exposure", True))
+            self.sources = [open_source(c["source"], self.scene, int(w), int(h), self.fps, lock) for c in cams]
             self.calibrations = []
             for c in cams:
                 cal = None
@@ -106,6 +107,14 @@ class HeimDarts:
             self.detector = DartDetector(len(self.sources), list(self.calibrations),
                                          DetectorConfig.from_dict(self.config.get("detector")))
             self._apply_timing()
+            # Leere Scheibe vom letzten Lauf: steckt beim Start noch ein Dart, wird das Ziehen erkannt
+            for i, c in enumerate(cams):
+                path = self._empty_path(i)
+                if not c["source"].strip().lower().startswith("sim") and os.path.exists(path):
+                    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+                    if img is not None:
+                        self.detector.preset_empty(i, img)
+            self._empty_saved_at = 0.0
             self._frames = [None] * len(self.sources)
             self.autocal_results = {}
             self._autocal_tried = set()
@@ -123,9 +132,35 @@ class HeimDarts:
                         and self.calibrations[i] is not None:
                     keep = self.calibrations[i].to_dict()
                 cams.append({"source": spec, "calibration": keep})
+            for i in range(max(len(old), len(cams))):     # andere Kameras: gemerkte leere Scheibe gilt nicht
+                if i >= len(cams) or i >= len(old) or old[i]["source"] != cams[i]["source"]:
+                    try:
+                        os.remove(self._empty_path(i))
+                    except OSError:
+                        pass
             self._apply_cameras(cams)
             self.save()
         self._log("info", "Kameras neu eingerichtet: " + ", ".join(specs))
+
+    def _empty_path(self, i: int) -> str:
+        return os.path.join(self.data_dir, f"leer_kamera{i + 1}.png")
+
+    def _save_empty(self, force: bool = False) -> None:
+        if self.has_sim or not self.detector.empty_changed:
+            return
+        if not force and time.time() - self._empty_saved_at < 30:
+            return
+        self.detector.empty_changed = False
+        self._empty_saved_at = time.time()
+        for i, img in self.detector.empty_images().items():
+            cv2.imwrite(self._empty_path(i), img)
+
+    def set_lock_exposure(self, on: bool) -> None:
+        with self.lock:
+            self.config["lock_exposure"] = bool(on)
+            self.save()
+            self._apply_cameras(self.config["cameras"])
+        self._log("info", "Belichtung " + ("wird festgehalten" if on else "automatisch"))
 
     def set_detector_settings(self, values: dict) -> None:
         with self.lock:
@@ -295,6 +330,7 @@ class HeimDarts:
                     last_state = state
                     for ev in events:
                         self._handle(ev)
+                    self._save_empty(force=any(ev["type"] == "takeout" for ev in events))
             except Exception as e:  # noqa: BLE001 – Schleife darf nie sterben
                 self._log("fehler", f"Erkennung: {e!r}")
                 time.sleep(0.5)
@@ -428,6 +464,7 @@ class HeimDarts:
                 "detector": {"state": st.state, "message": st.message, "darts_on_board": st.darts_on_board},
                 "cameras": cams,
                 "settings": self.detector.config.to_dict(),
+                "lock_exposure": bool(self.config.get("lock_exposure", True)),
                 "fps": {"value": self.fps, "min": FPS_MIN, "max": FPS_MAX, "loop": round(self._loop_rate, 1)},
                 "sim": self.has_sim,
                 "log": list(self.log)[:20],
